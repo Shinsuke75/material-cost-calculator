@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>実習材料費計算Webアプリ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .form-section {
+            margin-bottom: 40px;
+        }
+
+        .form-section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .student-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .material-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .material-table thead {
+            background: #f5f5f5;
+        }
+
+        .material-table th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .material-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .material-table input,
+        .material-table select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .material-table input:focus,
+        .material-table select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+
+        .subtotal {
+            background: #f0f4ff;
+            font-weight: 600;
+            color: #667eea;
+            text-align: right;
+        }
+
+        .add-row-btn {
+            background: #e8f0ff;
+            color: #667eea;
+            border: 1px solid #667eea;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+
+        .add-row-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .summary-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .summary-item {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+
+        .summary-label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .summary-value {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .total-amount {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .total-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .total-value {
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            flex: 1;
+            max-width: 200px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-reset {
+            background: #f0f0f0;
+            color: #333;
+            flex: 1;
+            max-width: 200px;
+        }
+
+        .btn-reset:hover {
+            background: #e0e0e0;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .modal-preview-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-preview-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .modal-preview-value {
+            text-align: right;
+            color: #333;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-confirm {
+            background: #4caf50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-confirm:hover {
+            background: #45a049;
+        }
+
+        .btn-cancel {
+            background: #f44336;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-cancel:hover {
+            background: #da190b;
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .admin-panel {
+            margin-top: 40px;
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+        }
+
+        .admin-toggle {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .admin-toggle:hover {
+            background: #efefef;
+        }
+
+        .admin-content {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: #fafafa;
+            border-radius: 6px;
+        }
+
+        .admin-content.active {
+            display: block;
+        }
+
+        .price-list {
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .price-list-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .price-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .updated-date {
+            font-size: 12px;
+            color: #999;
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .material-table {
+                font-size: 12px;
+            }
+
+            .material-table th,
+            .material-table td {
+                padding: 8px;
+            }
+
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .total-value {
+                font-size: 28px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn-primary,
+            .btn-reset {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 実習材料費計算Webアプリ</h1>
+            <p>使用した材料費を自動計算してGoogleスプレッドシートに送信します</p>
+        </div>
+
+        <div class="content">
+            <form id="costForm">
+                <!-- 学生情報セクション -->
+                <div class="form-section">
+                    <div class="form-section-title">📋 学生情報</div>
+                    <div class="student-info-grid">
+                        <div class="form-group">
+                            <label for="studentId">学籍番号 *</label>
+                            <input type="text" id="studentId" name="studentId" required placeholder="例: 2026001">
+                        </div>
+                        <div class="form-group">
+                            <label for="studentName">氏名 *</label>
+                            <input type="text" id="studentName" name="studentName" required placeholder="例: 山田太郎">
+                        </div>
+                        <div class="form-group">
+                            <label for="courseName">授業名 *</label>
+                            <select id="courseName" name="courseName" required>
+                                <option value="">選択してください</option>
+                                <option value="基礎実習A1">基礎実習A1</option>
+                                <option value="基礎実習A2">基礎実習A2</option>
+                                <option value="製品デザイン実習B">製品デザイン実習B</option>
+                                <option value="その他">その他</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="usageDate">使用日 *</label>
+                            <input type="date" id="usageDate" name="usageDate" required>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label for="remarks">備考（任意）</label>
+                            <input type="text" id="remarks" name="remarks" placeholder="何か追記事項があれば記入してください">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- スタイロフォーム -->
+                <div class="form-section">
+                    <div class="form-section-title">🟦 スタイロフォーム（¥8,000/m³）</div>
+                    <table class="material-table">
+                        <thead>
+                            <tr>
+                                <th>パーツ名</th>
+                                <th>縦 (mm)</th>
+                                <th>横 (mm)</th>
+                                <th>厚み (mm)</th>
+                                <th class="subtotal">小計</th>
+                            </tr>
+                        </thead>
+                        <tbody id="styrofoamBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- 木材 -->
+                <div class="form-section">
+                    <div class="form-section-title">🌳 木材</div>
+                    <table class="material-table">
+                        <thead>
+                            <tr>
+                                <th>パーツ名</th>
+                                <th>樹種</th>
+                                <th>縦 (mm)</th>
+                                <th>横 (mm)</th>
+                                <th>厚み (mm)</th>
+                                <th class="subtotal">小計</th>
+                            </tr>
+                        </thead>
+                        <tbody id="woodBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- アクリル板 -->
+                <div class="form-section">
+                    <div class="form-section-title">🟩 アクリル板</div>
+                    <table class="material-table">
+                        <thead>
+                            <tr>
+                                <th>パーツ名</th>
+                                <th>種類</th>
+                                <th>縦 (mm)</th>
+                                <th>横 (mm)</th>
+                                <th>厚み (mm)</th>
+                                <th class="subtotal">小計</th>
+                            </tr>
+                        </thead>
+                        <tbody id="acrylicBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- 3Dプリンタ -->
+                <div class="form-section">
+                    <div class="form-section-title">🖨️ 3Dプリンタ用フィラメント</div>
+                    <table class="material-table">
+                        <thead>
+                            <tr>
+                                <th>パーツ名</th>
+                                <th>フィラメント種類</th>
+                                <th>使用量 (g)</th>
+                                <th class="subtotal">小計</th>
+                            </tr>
+                        </thead>
+                        <tbody id="filamentBody"></tbody>
+                    </table>
+                    <button type="button" class="add-row-btn" data-section="filament">+ 行を追加</button>
+                </div>
+
+                <!-- その他消耗品 -->
+                <div class="form-section">
+                    <div class="form-section-title">📦 その他消耗品</div>
+                    <table class="material-table">
+                        <thead>
+                            <tr>
+                                <th>品目</th>
+                                <th>数量</th>
+                                <th class="subtotal">小計</th>
+                            </tr>
+                        </thead>
+                        <tbody id="suppliesBody"></tbody>
+                    </table>
+                    <button type="button" class="add-row-btn" data-section="supplies">+ 行を追加</button>
+                </div>
+
+                <!-- 合計表示 -->
+                <div class="summary-section">
+                    <div class="form-section-title">💰 費用合計</div>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <div class="summary-label">スタイロフォーム</div>
+                            <div class="summary-value" id="summaryStylerofoam">¥0</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">木材</div>
+                            <div class="summary-value" id="summaryWood">¥0</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">アクリル板</div>
+                            <div class="summary-value" id="summaryAcrylic">¥0</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">3Dプリンタ</div>
+                            <div class="summary-value" id="summaryFilament">¥0</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">消耗品</div>
+                            <div class="summary-value" id="summarySupplies">¥0</div>
+                        </div>
+                    </div>
+                    <div class="total-amount">
+                        <div class="total-label">総合計</div>
+                        <div class="total-value" id="grandTotal">¥0</div>
+                    </div>
+                </div>
+
+                <!-- ボタングループ -->
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">送信</button>
+                    <button type="reset" class="btn btn-reset">リセット</button>
+                </div>
+
+                <div class="message" id="message"></div>
+            </form>
+
+            <!-- 管理者パネル -->
+            <div class="admin-panel">
+                <div class="admin-toggle" id="adminToggle">
+                    <span>⚙️ 単価確認パネル（管理者向け）</span>
+                    <span>▼</span>
+                </div>
+                <div class="admin-content" id="adminContent">
+                    <div class="price-list" id="priceList"></div>
+                    <div class="updated-date">最終更新: 2026-04-02</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 確認モーダル -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content">
+            <div class="modal-header">📝 送信内容確認</div>
+            <div class="modal-body" id="confirmPreview"></div>
+            <div class="modal-footer">
+                <button class="btn-confirm" id="confirmBtn">送信する</button>
+                <button class="btn-cancel" id="cancelBtn">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =============================================
+        // 【設定】変更が必要な場合はここだけ編集する
+        // 最終更新: 2026-04-02
+        // =============================================
+
+        const GAS_URL = "https://script.google.com/macros/s/xxxxxxxxxx/exec"; // デプロイ後に差し替え
+
+        const UNIT_PRICES = {
+            styrofoam: {
+                label: "スタイロフォーム",
+                unit: "円/m³",
+                pricePerM3: 8000,
+            },
+            wood: {
+                label: "木材",
+                unit: "円/m³",
+                species: {
+                    "サクラ": 45000,
+                    "ブナ": 38000,
+                    "ホオ": 28000,
+                    "ヒノキ": 22000,
+                    "スギ": 18000,
+                    "シナ合板": 15000,
+                }
+            },
+            acrylic: {
+                label: "アクリル板",
+                unit: "円/m³",
+                variants: {
+                    "透明 3mm": 120000,
+                    "透明 5mm": 115000,
+                    "カラー 3mm": 150000,
+                    "カラー 5mm": 145000,
+                }
+            },
+            filament: {
+                label: "3Dプリンタ用フィラメント",
+                unit: "円/g",
+                materials: {
+                    "PLA": 3,
+                    "PETG": 4,
+                    "TPU": 6,
+                    "ABS": 4,
+                    "ASA": 5,
+                }
+            },
+            supplies: {
+                label: "その他消耗品",
+                items: {
+                    "コピー用紙": 1,
+                    "インクジェット用紙（A4光沢）": 15,
+                    "スプレー塗料": 200,
+                    "紙やすり": 30,
+                }
+            }
+        };
+
+        // =============================================
+        // ユーティリティ関数
+        // =============================================
+
+        function roundUpTo10Yen(amount) {
+            return Math.ceil(amount / 10) * 10;
+        }
+
+        function formatPrice(yen) {
+            return `¥${yen.toLocaleString('ja-JP')}`;
+        }
+
+        function parseNumber(value) {
+            const num = parseFloat(value);
+            return isNaN(num) ? 0 : num;
+        }
+
+        // =============================================
+        // 初期化
+        // =============================================
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeForm();
+            setupEventListeners();
+            setDefaultDate();
+            renderPriceList();
+        });
+
+        function initializeForm() {
+            // スタイロフォーム 5行
+            for (let i = 0; i < 5; i++) {
+                addStyrofoamRow();
+            }
+
+            // 木材 5行
+            for (let i = 0; i < 5; i++) {
+                addWoodRow();
+            }
+
+            // アクリル板 5行
+            for (let i = 0; i < 5; i++) {
+                addAcrylicRow();
+            }
+
+            // 3Dプリンタ 1行
+            addFilamentRow();
+
+            // 消耗品 1行
+            addSuppliesRow();
+        }
+
+        function setDefaultDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('usageDate').value = today;
+        }
+
+        function setupEventListeners() {
+            document.getElementById('costForm').addEventListener('submit', handleSubmit);
+            document.getElementById('costForm').addEventListener('reset', () => {
+                setTimeout(() => {
+                    updateAllCalculations();
+                }, 10);
+            });
+
+            document.querySelectorAll('.add-row-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const section = btn.dataset.section;
+                    if (section === 'filament') addFilamentRow();
+                    if (section === 'supplies') addSuppliesRow();
+                });
+            });
+
+            document.getElementById('adminToggle').addEventListener('click', () => {
+                document.getElementById('adminContent').classList.toggle('active');
+                const toggle = document.getElementById('adminToggle');
+                toggle.style.transform = document.getElementById('adminContent').classList.contains('active') ? 'rotate(180deg)' : 'rotate(0deg)';
+            });
+
+            document.getElementById('confirmBtn').addEventListener('click', submitToGAS);
+            document.getElementById('cancelBtn').addEventListener('click', closeModal);
+        }
+
+        // =============================================
+        // 行生成関数
+        // =============================================
+
+        function addStyrofoamRow() {
+            const tbody = document.getElementById('styrofoamBody');
+            const rowIndex = tbody.children.length;
+            const row = document.createElement('tr');
+
+            row.innerHTML = `
+                <td><input type="text" class="part-name" placeholder="例: 脚部"></td>
+                <td><input type="number" class="dimension width" placeholder="縦" min="0" step="1"></td>
+                <td><input type="number" class="dimension height" placeholder="横" min="0" step="1"></td>
+                <td><input type="number" class="dimension thickness" placeholder="厚み" min="0" step="1"></td>
+                <td class="subtotal">¥0</td>
+            `;
+
+            row.querySelectorAll('input').forEach(input => {
+                input.addEventListener('change', updateAllCalculations);
+                input.addEventListener('input', updateAllCalculations);
+            });
+
+            tbody.appendChild(row);
+        }
+
+        function addWoodRow() {
+            const tbody = document.getElementById('woodBody');
+            const rowIndex = tbody.children.length;
+            const row = document.createElement('tr');
+
+            const speciesOptions = Object.keys(UNIT_PRICES.wood.species)
+                .map(s => `<option value="${s}">${s}</option>`)
+                .join('');
+
+            row.innerHTML = `
+                <td><input type="text" class="part-name" placeholder="例: 天板"></td>
+                <td><select class="species">${speciesOptions}</select></td>
+                <td><input type="number" class="dimension width" placeholder="縦" min="0" step="1"></td>
+                <td><input type="number" class="dimension height" placeholder="横" min="0" step="1"></td>
+                <td><input type="number" class="dimension thickness" placeholder="厚み" min="0" step="1"></td>
+                <td class="subtotal">¥0</td>
+            `;
+
+            row.querySelectorAll('input, select').forEach(input => {
+                input.addEventListener('change', updateAllCalculations);
+                input.addEventListener('input', updateAllCalculations);
+            });
+
+            tbody.appendChild(row);
+        }
+
+        function addAcrylicRow() {
+            const tbody = document.getElementById('acrylicBody');
+            const rowIndex = tbody.children.length;
+            const row = document.createElement('tr');
+
+            const variantOptions = Object.keys(UNIT_PRICES.acrylic.variants)
+                .map(v => `<option value="${v}">${v}</option>`)
+                .join('');
+
+            row.innerHTML = `
+                <td><input type="text" class="part-name" placeholder="例: 窓"></td>
+                <td><select class="variant">${variantOptions}</select></td>
+                <td><input type="number" class="dimension width" placeholder="縦" min="0" step="1"></td>
+                <td><input type="number" class="dimension height" placeholder="横" min="0" step="1"></td>
+                <td><input type="number" class="dimension thickness" placeholder="厚み" min="0" step="1"></td>
+                <td class="subtotal">¥0</td>
+            `;
+
+            row.querySelectorAll('input, select').forEach(input => {
+                input.addEventListener('change', updateAllCalculations);
+                input.addEventListener('input', updateAllCalculations);
+            });
+
+            tbody.appendChild(row);
+        }
+
+        function addFilamentRow() {
+            const tbody = document.getElementById('filamentBody');
+            const row = document.createElement('tr');
+
+            const materialOptions = Object.keys(UNIT_PRICES.filament.materials)
+                .map(m => `<option value="${m}">${m}</option>`)
+                .join('');
+
+            row.innerHTML = `
+                <td><input type="text" class="part-name" placeholder="例: 本体"></td>
+                <td><select class="material">${materialOptions}</select></td>
+                <td><input type="number" class="weight" placeholder="重量" min="0" step="0.1"></td>
+                <td class="subtotal">¥0</td>
+            `;
+
+            row.querySelectorAll('input, select').forEach(input => {
+                input.addEventListener('change', updateAllCalculations);
+                input.addEventListener('input', updateAllCalculations);
+            });
+
+            tbody.appendChild(row);
+        }
+
+        function addSuppliesRow() {
+            const tbody = document.getElementById('suppliesBody');
+            const row = document.createElement('tr');
+
+            const itemOptions = Object.keys(UNIT_PRICES.supplies.items)
+                .map(i => `<option value="${i}">${i}</option>`)
+                .join('');
+
+            row.innerHTML = `
+                <td><select class="item">${itemOptions}</select></td>
+                <td><input type="number" class="quantity" placeholder="数量" min="0" step="1"></td>
+                <td class="subtotal">¥0</td>
+            `;
+
+            row.querySelectorAll('input, select').forEach(input => {
+                input.addEventListener('change', updateAllCalculations);
+                input.addEventListener('input', updateAllCalculations);
+            });
+
+            tbody.appendChild(row);
+        }
+
+        // =============================================
+        // 計算関数
+        // =============================================
+
+        function calculateStyrofoamSubtotal(row) {
+            const partName = row.querySelector('.part-name').value;
+            const width = parseNumber(row.querySelector('.width').value);
+            const height = parseNumber(row.querySelector('.height').value);
+            const thickness = parseNumber(row.querySelector('.thickness').value);
+
+            if (!partName || !width || !height || !thickness) return 0;
+
+            const volumeM3 = (width * height * thickness) / 1000000000;
+            const amount = volumeM3 * UNIT_PRICES.styrofoam.pricePerM3;
+            return roundUpTo10Yen(amount);
+        }
+
+        function calculateWoodSubtotal(row) {
+            const partName = row.querySelector('.part-name').value;
+            const species = row.querySelector('.species').value;
+            const width = parseNumber(row.querySelector('.width').value);
+            const height = parseNumber(row.querySelector('.height').value);
+            const thickness = parseNumber(row.querySelector('.thickness').value);
+
+            if (!partName || !width || !height || !thickness) return 0;
+
+            const volumeM3 = (width * height * thickness) / 1000000000;
+            const price = UNIT_PRICES.wood.species[species] || 0;
+            const amount = volumeM3 * price;
+            return roundUpTo10Yen(amount);
+        }
+
+        function calculateAcrylicSubtotal(row) {
+            const partName = row.querySelector('.part-name').value;
+            const variant = row.querySelector('.variant').value;
+            const width = parseNumber(row.querySelector('.width').value);
+            const height = parseNumber(row.querySelector('.height').value);
+            const thickness = parseNumber(row.querySelector('.thickness').value);
+
+            if (!partName || !width || !height || !thickness) return 0;
+
+            const volumeM3 = (width * height * thickness) / 1000000000;
+            const price = UNIT_PRICES.acrylic.variants[variant] || 0;
+            const amount = volumeM3 * price;
+            return roundUpTo10Yen(amount);
+        }
+
+        function calculateFilamentSubtotal(row) {
+            const partName = row.querySelector('.part-name').value;
+            const material = row.querySelector('.material').value;
+            const weight = parseNumber(row.querySelector('.weight').value);
+
+            if (!partName || !weight) return 0;
+
+            const price = UNIT_PRICES.filament.materials[material] || 0;
+            const amount = weight * price;
+            return roundUpTo10Yen(amount);
+        }
+
+        function calculateSuppliesSubtotal(row) {
+            const item = row.querySelector('.item').value;
+            const quantity = parseNumber(row.querySelector('.quantity').value);
+
+            if (!quantity) return 0;
+
+            const price = UNIT_PRICES.supplies.items[item] || 0;
+            const amount = quantity * price;
+            return roundUpTo10Yen(amount);
+        }
+
+        function updateAllCalculations() {
+            updateSectionCalculations('styrofoamBody', calculateStyrofoamSubtotal);
+            updateSectionCalculations('woodBody', calculateWoodSubtotal);
+            updateSectionCalculations('acrylicBody', calculateAcrylicSubtotal);
+            updateSectionCalculations('filamentBody', calculateFilamentSubtotal);
+            updateSectionCalculations('suppliesBody', calculateSuppliesSubtotal);
+            updateSummary();
+        }
+
+        function updateSectionCalculations(sectionId, calcFunction) {
+            const tbody = document.getElementById(sectionId);
+            tbody.querySelectorAll('tr').forEach(row => {
+                const subtotal = calcFunction(row);
+                row.querySelector('.subtotal').textContent = formatPrice(subtotal);
+            });
+        }
+
+        function updateSummary() {
+            const styrofoamTotal = getSectionTotal('styrofoamBody', calculateStyrofoamSubtotal);
+            const woodTotal = getSectionTotal('woodBody', calculateWoodSubtotal);
+            const acrylicTotal = getSectionTotal('acrylicBody', calculateAcrylicSubtotal);
+            const filamentTotal = getSectionTotal('filamentBody', calculateFilamentSubtotal);
+            const suppliesTotal = getSectionTotal('suppliesBody', calculateSuppliesSubtotal);
+
+            document.getElementById('summaryStylerofoam').textContent = formatPrice(styrofoamTotal);
+            document.getElementById('summaryWood').textContent = formatPrice(woodTotal);
+            document.getElementById('summaryAcrylic').textContent = formatPrice(acrylicTotal);
+            document.getElementById('summaryFilament').textContent = formatPrice(filamentTotal);
+            document.getElementById('summarySupplies').textContent = formatPrice(suppliesTotal);
+
+            const grandTotal = styrofoamTotal + woodTotal + acrylicTotal + filamentTotal + suppliesTotal;
+            document.getElementById('grandTotal').textContent = formatPrice(grandTotal);
+        }
+
+        function getSectionTotal(sectionId, calcFunction) {
+            const tbody = document.getElementById(sectionId);
+            let total = 0;
+            tbody.querySelectorAll('tr').forEach(row => {
+                total += calcFunction(row);
+            });
+            return total;
+        }
+
+        // =============================================
+        // 送信・モーダル処理
+        // =============================================
+
+        function handleSubmit(e) {
+            e.preventDefault();
+
+            const studentId = document.getElementById('studentId').value.trim();
+            const studentName = document.getElementById('studentName').value.trim();
+            const courseName = document.getElementById('courseName').value;
+
+            if (!studentId || !studentName || !courseName) {
+                showMessage('学籍番号、氏名、授業名は必須項目です', 'error');
+                return;
+            }
+
+            showConfirmModal();
+        }
+
+        function showConfirmModal() {
+            const preview = document.getElementById('confirmPreview');
+
+            const studentId = document.getElementById('studentId').value;
+            const studentName = document.getElementById('studentName').value;
+            const courseName = document.getElementById('courseName').value;
+            const usageDate = document.getElementById('usageDate').value;
+            const remarks = document.getElementById('remarks').value;
+
+            const styrofoamTotal = getSectionTotal('styrofoamBody', calculateStyrofoamSubtotal);
+            const woodTotal = getSectionTotal('woodBody', calculateWoodSubtotal);
+            const acrylicTotal = getSectionTotal('acrylicBody', calculateAcrylicSubtotal);
+            const filamentTotal = getSectionTotal('filamentBody', calculateFilamentSubtotal);
+            const suppliesTotal = getSectionTotal('suppliesBody', calculateSuppliesSubtotal);
+            const grandTotal = styrofoamTotal + woodTotal + acrylicTotal + filamentTotal + suppliesTotal;
+
+            let html = `
+                <div class="modal-preview-item">
+                    <span class="modal-preview-label">学籍番号</span>
+                    <span class="modal-preview-value">${studentId}</span>
+                </div>
+                <div class="modal-preview-item">
+                    <span class="modal-preview-label">氏名</span>
+                    <span class="modal-preview-value">${studentName}</span>
+                </div>
+                <div class="modal-preview-item">
+                    <span class="modal-preview-label">授業名</span>
+                    <span class="modal-preview-value">${courseName}</span>
+                </div>
+                <div class="modal-preview-item">
+                    <span class="modal-preview-label">使用日</span>
+                    <span class="modal-preview-value">${usageDate}</span>
+                </div>
+                ${remarks ? `<div class="modal-preview-item">
+                    <span class="modal-preview-label">備考</span>
+                    <span class="modal-preview-value">${remarks}</span>
+                </div>` : ''}
+                <hr style="margin: 15px 0; border: none; border-top: 1px solid #eee;">
+                <div class="modal-preview-item">
+                    <span class="modal-preview-label">スタイロフォーム</span>
+                    <span class="modal-preview-value">${formatPrice(styrofoamTotal)}</span>
+                </div>
+                <div class="modal-preview-item">
+                    <span class="modal-preview-label">木材</span>
+                    <span class="modal-preview-value">${formatPrice(woodTotal)}</span>
+                </div>
+                <div class="modal-preview-item">
+                    <span class="modal-preview-label">アクリル板</span>
+                    <span class="modal-preview-value">${formatPrice(acrylicTotal)}</span>
+                </div>
+                <div class="modal-preview-item">
+                    <span class="modal-preview-label">3Dプリンタ</span>
+                    <span class="modal-preview-value">${formatPrice(filamentTotal)}</span>
+                </div>
+                <div class="modal-preview-item">
+                    <span class="modal-preview-label">消耗品</span>
+                    <span class="modal-preview-value">${formatPrice(suppliesTotal)}</span>
+                </div>
+                <hr style="margin: 15px 0; border: none; border-top: 2px solid #667eea;">
+                <div class="modal-preview-item" style="font-size: 16px; font-weight: bold; color: #667eea;">
+                    <span class="modal-preview-label">総合計</span>
+                    <span class="modal-preview-value">${formatPrice(grandTotal)}</span>
+                </div>
+            `;
+
+            preview.innerHTML = html;
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('confirmModal').classList.remove('active');
+        }
+
+        async function submitToGAS() {
+            closeModal();
+
+            const data = {
+                row: buildDataRow()
+            };
+
+            try {
+                const response = await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showMessage('✅ 送信しました！', 'success');
+                    setTimeout(() => {
+                        document.getElementById('costForm').reset();
+                        setDefaultDate();
+                        updateAllCalculations();
+                    }, 1500);
+                } else {
+                    throw new Error('HTTP Error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('❌ 送信に失敗しました。内容をコピーして担当者に連絡してください', 'error');
+                copyDataToClipboard(data);
+            }
+        }
+
+        function buildDataRow() {
+            const now = new Date().toISOString();
+            const studentId = document.getElementById('studentId').value;
+            const studentName = document.getElementById('studentName').value;
+            const courseName = document.getElementById('courseName').value;
+            const usageDate = document.getElementById('usageDate').value;
+            const remarks = document.getElementById('remarks').value;
+
+            const row = [
+                now,
+                studentId,
+                studentName,
+                courseName,
+                usageDate,
+                remarks
+            ];
+
+            // スタイロフォーム 5行
+            for (let i = 0; i < 5; i++) {
+                const tbody = document.getElementById('styrofoamBody');
+                const tr = tbody.children[i];
+                if (tr) {
+                    const partName = tr.querySelector('.part-name').value;
+                    const width = tr.querySelector('.width').value;
+                    const height = tr.querySelector('.height').value;
+                    const thickness = tr.querySelector('.thickness').value;
+                    const subtotal = partName && width && height && thickness ? calculateStyrofoamSubtotal(tr) : '';
+
+                    row.push(partName || '');
+                    row.push(width || '');
+                    row.push(height || '');
+                    row.push(thickness || '');
+                    row.push(subtotal || '');
+                }
+            }
+
+            // 木材 5行
+            for (let i = 0; i < 5; i++) {
+                const tbody = document.getElementById('woodBody');
+                const tr = tbody.children[i];
+                if (tr) {
+                    const partName = tr.querySelector('.part-name').value;
+                    const species = tr.querySelector('.species').value;
+                    const width = tr.querySelector('.width').value;
+                    const height = tr.querySelector('.height').value;
+                    const thickness = tr.querySelector('.thickness').value;
+                    const subtotal = partName && width && height && thickness ? calculateWoodSubtotal(tr) : '';
+
+                    row.push(partName || '');
+                    row.push(species || '');
+                    row.push(width || '');
+                    row.push(height || '');
+                    row.push(thickness || '');
+                    row.push(subtotal || '');
+                }
+            }
+
+            // アクリル板 5行
+            for (let i = 0; i < 5; i++) {
+                const tbody = document.getElementById('acrylicBody');
+                const tr = tbody.children[i];
+                if (tr) {
+                    const partName = tr.querySelector('.part-name').value;
+                    const variant = tr.querySelector('.variant').value;
+                    const width = tr.querySelector('.width').value;
+                    const height = tr.querySelector('.height').value;
+                    const thickness = tr.querySelector('.thickness').value;
+                    const subtotal = partName && width && height && thickness ? calculateAcrylicSubtotal(tr) : '';
+
+                    row.push(partName || '');
+                    row.push(variant || '');
+                    row.push(width || '');
+                    row.push(height || '');
+                    row.push(thickness || '');
+                    row.push(subtotal || '');
+                }
+            }
+
+            // 3Dプリンタ (最大5行)
+            const filamentTbody = document.getElementById('filamentBody');
+            const filamentRows = Math.min(filamentTbody.children.length, 5);
+            for (let i = 0; i < 5; i++) {
+                const tr = filamentTbody.children[i];
+                if (tr && i < filamentRows) {
+                    const partName = tr.querySelector('.part-name').value;
+                    const material = tr.querySelector('.material').value;
+                    const weight = tr.querySelector('.weight').value;
+                    const subtotal = partName && weight ? calculateFilamentSubtotal(tr) : '';
+
+                    row.push(partName || '');
+                    row.push(material || '');
+                    row.push(weight || '');
+                    row.push(subtotal || '');
+                } else {
+                    row.push('', '', '', '');
+                }
+            }
+
+            // その他消耗品 (最大5行)
+            const suppliesTbody = document.getElementById('suppliesBody');
+            const suppliesRows = Math.min(suppliesTbody.children.length, 5);
+            for (let i = 0; i < 5; i++) {
+                const tr = suppliesTbody.children[i];
+                if (tr && i < suppliesRows) {
+                    const item = tr.querySelector('.item').value;
+                    const quantity = tr.querySelector('.quantity').value;
+                    const subtotal = quantity ? calculateSuppliesSubtotal(tr) : '';
+
+                    row.push(item || '');
+                    row.push(quantity || '');
+                    row.push(subtotal || '');
+                } else {
+                    row.push('', '', '');
+                }
+            }
+
+            // カテゴリ別合計
+            const styrofoamTotal = getSectionTotal('styrofoamBody', calculateStyrofoamSubtotal);
+            const woodTotal = getSectionTotal('woodBody', calculateWoodSubtotal);
+            const acrylicTotal = getSectionTotal('acrylicBody', calculateAcrylicSubtotal);
+            const filamentTotal = getSectionTotal('filamentBody', calculateFilamentSubtotal);
+            const suppliesTotal = getSectionTotal('suppliesBody', calculateSuppliesSubtotal);
+            const grandTotal = styrofoamTotal + woodTotal + acrylicTotal + filamentTotal + suppliesTotal;
+
+            row.push(styrofoamTotal || '');
+            row.push(woodTotal || '');
+            row.push(acrylicTotal || '');
+            row.push(filamentTotal || '');
+            row.push(suppliesTotal || '');
+            row.push(grandTotal || '');
+
+            return row;
+        }
+
+        function showMessage(text, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `message ${type}`;
+            setTimeout(() => {
+                messageEl.className = 'message';
+            }, 4000);
+        }
+
+        async function copyDataToClipboard(data) {
+            try {
+                await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+                showMessage('📋 データをクリップボードにコピーしました', 'success');
+            } catch (err) {
+                console.error('Failed to copy:', err);
+            }
+        }
+
+        // =============================================
+        // 管理者パネル
+        // =============================================
+
+        function renderPriceList() {
+            const priceList = document.getElementById('priceList');
+            let html = '';
+
+            // スタイロフォーム
+            html += `<strong>${UNIT_PRICES.styrofoam.label}</strong><br>`;
+            html += `¥${UNIT_PRICES.styrofoam.pricePerM3.toLocaleString('ja-JP')}/m³<br><br>`;
+
+            // 木材
+            html += `<strong>${UNIT_PRICES.wood.label}</strong><br>`;
+            for (const [species, price] of Object.entries(UNIT_PRICES.wood.species)) {
+                html += `${species}: ¥${price.toLocaleString('ja-JP')}/m³<br>`;
+            }
+            html += '<br>';
+
+            // アクリル板
+            html += `<strong>${UNIT_PRICES.acrylic.label}</strong><br>`;
+            for (const [variant, price] of Object.entries(UNIT_PRICES.acrylic.variants)) {
+                html += `${variant}: ¥${price.toLocaleString('ja-JP')}/m³<br>`;
+            }
+            html += '<br>';
+
+            // 3Dプリンタ
+            html += `<strong>${UNIT_PRICES.filament.label}</strong><br>`;
+            for (const [material, price] of Object.entries(UNIT_PRICES.filament.materials)) {
+                html += `${material}: ¥${price}/g<br>`;
+            }
+            html += '<br>';
+
+            // 消耗品
+            html += `<strong>${UNIT_PRICES.supplies.label}</strong><br>`;
+            for (const [item, price] of Object.entries(UNIT_PRICES.supplies.items)) {
+                html += `${item}: ¥${price}/個<br>`;
+            }
+
+            priceList.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
