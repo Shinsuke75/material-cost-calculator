@@ -909,15 +909,23 @@
     </div>
 
     <div id="tSubmitArea">
-      <button class="send-confirm-btn" id="tSendBtn" onclick="sendTeacherRequest()" disabled>
-        📩 確認依頼を送る
+      <button class="send-confirm-btn" id="tSendBtn" onclick="generateRequestURL()" disabled>
+        🔗 学生に送るURLを生成
       </button>
     </div>
+    <div id="tUrlArea" style="display:none; margin-top:14px;">
+      <div style="font-size:0.85rem; color:#2b6cb0; font-weight:700; margin-bottom:8px;">📋 このURLをTeamsやメールで学生に送ってください</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="text" id="tGeneratedUrl" readonly style="flex:1; font-size:0.75rem; background:#ebf8ff; border:1.5px solid #90cdf4; border-radius:8px; padding:8px 10px; color:#2c5282; min-width:0;">
+        <button onclick="copyRequestURL()" style="background:#3182ce; color:white; border:none; border-radius:8px; padding:10px 14px; font-weight:700; cursor:pointer; font-size:0.85rem; white-space:nowrap; flex-shrink:0;">コピー</button>
+      </div>
+      <div id="tCopyMsg" style="display:none; font-size:0.82rem; color:#38a169; margin-top:6px; font-weight:700;">✅ コピーしました！Teamsに貼り付けて送ってください</div>
+    </div>
     <div class="teacher-success" id="teacherSuccess">
-      <div class="t-icon">📨</div>
-      <h3>確認依頼を送りました！</h3>
-      <p>確認依頼を送りました。<br>利用者がOKを押すと記録が確定します。</p>
-      <button class="reset-btn" onclick="resetTeacher()">続けて別の依頼を送る</button>
+      <div class="t-icon">🔗</div>
+      <h3>URLを生成しました！</h3>
+      <p>上のURLをコピーして、Teamsやメールで学生に送ってください。<br>学生がURLを開くと確認依頼カードが表示されます。</p>
+      <button class="reset-btn" onclick="resetTeacher()">続けて別の依頼を作る</button>
     </div>
   </div>
 
@@ -1640,37 +1648,56 @@ function updateTeacherSendBtn() {
   document.getElementById('tSendBtn').disabled = !(hasId && hasName && tItems.length > 0);
 }
 
-let pendingRequests = [
-  {
-    id: 'demo-1',
-    teacher: '佐藤 教授',
-    date: '2024-05-05',
-    materials: [
-      { type:'wood', name:'ヒノキ（檜）', detail:'300×200×30mm × 2本', price: 3672 },
-      { type:'filament', name:'PLA（白／黒）', detail:'85g', price: 306 },
-    ],
-    notes: '木工実習III 前期課題',
-    status: 'pending',
-  }
-];
+let pendingRequests = [];
 
-function sendTeacherRequest() {
+function loadFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const reqParam = params.get('req');
+  if (reqParam) {
+    try {
+      const req = JSON.parse(decodeURIComponent(atob(reqParam)));
+      req.status = req.status || 'pending';
+      pendingRequests.push(req);
+    } catch(e) {
+      console.warn('URL req parse failed', e);
+    }
+  }
+}
+
+function generateRequestURL() {
   const id = document.getElementById('tStudentId').value.trim();
+  const name = document.getElementById('tStudentName').value.trim();
   const notes = document.getElementById('tNotes').value;
 
-  pendingRequests.push({
+  const req = {
     id: 'req-' + Date.now(),
     teacher: '担当教員',
-    date: new Date().toLocaleDateString('ja-JP'),
+    date: new Date().toISOString().slice(0, 10),
     materials: [...tItems],
     notes,
     status: 'pending',
     targetStudent: id,
-  });
+    targetName: name,
+  };
 
+  const encoded = btoa(encodeURIComponent(JSON.stringify(req)));
+  const base = window.location.origin + window.location.pathname;
+  const url = base + '?req=' + encoded;
+
+  document.getElementById('tGeneratedUrl').value = url;
+  document.getElementById('tUrlArea').style.display = 'block';
   document.getElementById('tSubmitArea').style.display = 'none';
   document.getElementById('teacherSuccess').classList.add('show');
-  renderPendingList();
+  navigator.clipboard.writeText(url).catch(() => {});
+}
+
+function copyRequestURL() {
+  const url = document.getElementById('tGeneratedUrl').value;
+  navigator.clipboard.writeText(url).then(() => {
+    const msg = document.getElementById('tCopyMsg');
+    msg.style.display = 'block';
+    setTimeout(() => msg.style.display = 'none', 3000);
+  });
 }
 
 function resetTeacher() {
@@ -1680,17 +1707,20 @@ function resetTeacher() {
   document.getElementById('tStudentName').value = '';
   document.getElementById('tNotes').value = '';
   document.getElementById('tSubmitArea').style.display = '';
+  document.getElementById('tUrlArea').style.display = 'none';
   document.getElementById('teacherSuccess').classList.remove('show');
 }
 
 function renderPendingList() {
   const list = document.getElementById('pendingList');
+  const section = document.getElementById('pendingSection');
   const pending = pendingRequests.filter(r => r.status !== 'approved' || r._justApproved);
 
   if (pending.length === 0) {
-    list.innerHTML = '<div class="no-pending">現在、確認依頼はありません</div>';
+    section.style.display = 'none';
     return;
   }
+  section.style.display = '';
 
   list.innerHTML = pending.map(req => {
     const total = req.materials.reduce((s,m) => s+m.price, 0);
@@ -1735,6 +1765,7 @@ function approveRequest(reqId) {
   }
 }
 
+loadFromURL();
 renderPendingList();
 
 // =====================
