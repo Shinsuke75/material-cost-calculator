@@ -1173,13 +1173,13 @@
         <textarea id="notes" rows="3" placeholder="例：授業の課題制作、椅子の脚材として使用"></textarea>
       </div>
       <button class="submit-btn" id="submitBtn" onclick="showConfirm()" disabled>
-        ✅ 内容を確認して送信する
+        📋 内容を確認して申請フォームを開く
       </button>
     </div>
     <div class="success-card" id="successCard">
-      <div class="success-icon">🎉</div>
-      <h3>申請を送信しました！</h3>
-      <p>申請内容を送信しました。<br>担当教員に確認してもらってください。</p>
+      <div class="success-icon">📋</div>
+      <h3>申請フォームを開きました！</h3>
+      <p>別タブでフォームが開きました。<br>内容を確認して<strong>「送信」</strong>を押してください。</p>
       <button class="reset-btn" onclick="resetAll()">新しい申請を始める</button>
     </div>
   </div>
@@ -1193,7 +1193,7 @@
     <div class="modal-content" id="modalContent"></div>
     <div class="modal-btns">
       <button class="modal-cancel" onclick="closeModal()">戻って修正する</button>
-      <button class="modal-confirm" onclick="submitForm()">送信する</button>
+      <button class="modal-confirm" onclick="submitForm()">📋 申請フォームを開く</button>
     </div>
   </div>
 </div>
@@ -1486,6 +1486,27 @@ function closeModal() {
 }
 
 function submitForm() {
+  const isStudent = document.querySelector('input[name="userType"]:checked').value === 'student';
+  const id = document.getElementById('studentId').value.trim();
+  const name = document.getElementById('studentName').value.trim();
+  const total = items.reduce((s, i) => s + i.price, 0);
+  const notes = document.getElementById('notes').value;
+
+  const materialText = items.map(i =>
+    `${i.type === 'wood' ? '木材' : 'フィラメント'}: ${i.name}（${i.detail}）¥${i.price.toLocaleString()}`
+  ).join(' / ');
+
+  const FORM_BASE = 'https://forms.office.com/Pages/ResponsePage.aspx?id=p3Ia575cq0io_IV_OBYRrkbQpvf5oFFNg_USCYSUVAlUM0gyTThXTjVNRFQ0WU84WkhWRVhIVDJWUS4u';
+  const params = new URLSearchParams({
+    'r260e15427bb946e681cb6bf9173c066f': id,
+    'rb5a47356f6ce4145a9e9de51a96bb443': name,
+    'redf7c4dcec0948e9a8cdcdc91d8a96ec': materialText,
+    'r6dbdfad7d31b40c3b0c53a261e9c1fe9': String(total),
+    're1a22d542a3d46ee95348eb4614656c7': notes,
+  });
+
+  window.open(FORM_BASE + '&' + params.toString(), '_blank');
+
   closeModal();
   document.getElementById('submitCard').querySelector('.submit-section').style.display = 'none';
   document.getElementById('successCard').classList.add('show');
