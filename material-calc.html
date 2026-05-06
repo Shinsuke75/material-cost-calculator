@@ -1496,13 +1496,13 @@ function submitForm() {
     `${i.type === 'wood' ? '木材' : 'フィラメント'}: ${i.name}（${i.detail}）¥${i.price.toLocaleString()}`
   ).join(' / ');
 
-  const FORM_BASE = 'https://forms.office.com/Pages/ResponsePage.aspx?id=p3Ia575cq0io_IV_OBYRrkbQpvf5oFFNg_USCYSUVAlUM0gyTThXTjVNRFQ0WU84WkhWRVhIVDJWUS4u';
+  const FORM_BASE = 'https://docs.google.com/forms/d/1S2BA3diobZyheCjTu3o3kTvpyE2cE1eEziX_-p_QUV4/viewform?usp=pp_url';
   const params = new URLSearchParams({
-    'r260e15427bb946e681cb6bf9173c066f': id,
-    'rb5a47356f6ce4145a9e9de51a96bb443': name,
-    'redf7c4dcec0948e9a8cdcdc91d8a96ec': materialText,
-    'r6dbdfad7d31b40c3b0c53a261e9c1fe9': String(total),
-    're1a22d542a3d46ee95348eb4614656c7': notes,
+    'entry.1504820662': id,
+    'entry.116801571': name,
+    'entry.2131404964': materialText,
+    'entry.1682844209': String(total),
+    'entry.1378369641': notes,
   });
 
   window.open(FORM_BASE + '&' + params.toString(), '_blank');
