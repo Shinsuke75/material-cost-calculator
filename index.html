@@ -1280,20 +1280,24 @@ function init() {
 
 function rebuildSelects() {
   const wSel = document.getElementById('woodSpecies');
+  const selectedWood = wSel.value;
   wSel.innerHTML = '<option value="">選択してください</option>';
   WOOD_PRICES.forEach(w => {
     const opt = document.createElement('option');
     opt.value = w.pricePerM3;
     opt.text = w.name;
+    if (String(opt.value) === selectedWood) opt.selected = true;
     wSel.appendChild(opt);
   });
 
   const fSel = document.getElementById('filamentType');
+  const selectedFilament = fSel.value;
   fSel.innerHTML = '<option value="">選択してください</option>';
   FILAMENT_PRICES.forEach(f => {
     const opt = document.createElement('option');
     opt.value = f.pricePerG;
     opt.text = f.name;
+    if (String(opt.value) === selectedFilament) opt.selected = true;
     fSel.appendChild(opt);
   });
 }
@@ -1301,7 +1305,10 @@ function rebuildSelects() {
 async function fetchPricesFromGAS() {
   try {
     const res = await fetch(GAS_URL + '?type=prices');
-    if (!res.ok) return;
+    if (!res.ok) {
+      console.warn('価格マスタ取得失敗', res.status);
+      return;
+    }
 
     const data = await res.json();
     const getFirstArray = (source, paths) => {
