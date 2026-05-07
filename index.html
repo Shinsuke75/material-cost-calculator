@@ -1313,6 +1313,8 @@ async function loadPricesWithFallback() {
   } catch (e) {
     WOOD_PRICES = DEFAULT_WOOD_PRICES.map(x => ({ ...x }));
     FILAMENT_PRICES = DEFAULT_FILAMENT_PRICES.map(x => ({ ...x }));
+    localStorage.removeItem('woodPrices');
+    localStorage.removeItem('filamentPrices');
     console.warn('価格取得に失敗したためデフォルト価格を使用します', e);
   } finally {
     clearTimeout(timeoutId);
