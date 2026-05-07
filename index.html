@@ -1293,8 +1293,15 @@ function parsePriceMasterPayload(payload) {
   let filament = normalizeFilamentPrices(root.filamentPrices ?? root.filament ?? root.filaments ?? root.filamentMaster);
 
   if ((!wood.length || !filament.length) && rows.length) {
-    const woodRows = rows.filter(r => String(r?.type ?? r?.category ?? r?.materialType ?? '').toLowerCase().includes('wood') || String(r?.type ?? r?.category ?? r?.materialType ?? '').includes('木'));
-    const filamentRows = rows.filter(r => String(r?.type ?? r?.category ?? r?.materialType ?? '').toLowerCase().includes('filament') || String(r?.type ?? r?.category ?? r?.materialType ?? '').includes('フィラ'));
+    const materialTypeText = r => String(r?.type ?? r?.category ?? r?.materialType ?? '');
+    const woodRows = rows.filter(r => {
+      const type = materialTypeText(r);
+      return type.toLowerCase().includes('wood') || type.includes('木');
+    });
+    const filamentRows = rows.filter(r => {
+      const type = materialTypeText(r);
+      return type.toLowerCase().includes('filament') || type.includes('フィラ');
+    });
     if (!wood.length) wood = normalizeWoodPrices(woodRows);
     if (!filament.length) filament = normalizeFilamentPrices(filamentRows);
   }
@@ -1313,6 +1320,7 @@ async function loadPriceMasterFromGAS() {
         payload = await res.json();
       } catch (_) {
         const text = await res.text();
+        // Google系レスポンスのXSSIプレフィックス ")]}'," を除去
         payload = JSON.parse(text.replace(/^\)\]\}',?\s*/, ''));
       }
 
@@ -1325,7 +1333,7 @@ async function loadPriceMasterFromGAS() {
       localStorage.setItem('filamentPrices', JSON.stringify(FILAMENT_PRICES));
       return true;
     } catch (e) {
-      console.warn(`単価マスタ取得失敗 (${query})`, e);
+      console.warn(`単価マスタ読み込み失敗 (${query})`, e);
     }
   }
   return false;
@@ -1333,6 +1341,7 @@ async function loadPriceMasterFromGAS() {
 
 function rebuildSelectElement(selectId, prices, valueKey) {
   const sel = document.getElementById(selectId);
+  if (!sel) return;
   const prev = sel.value;
   sel.innerHTML = '<option value="">選択してください</option>';
   prices.forEach(item => {
@@ -1368,7 +1377,7 @@ function init() {
   loadPriceMasterFromGAS().then(loaded => {
     if (!loaded) return;
     refreshPriceMasterUI();
-  }).catch(e => console.warn('単価マスタ読み込みエラー', e));
+  }).catch(e => console.warn('単価マスタ読み込み失敗', e));
 }
 
 // タブ切替
