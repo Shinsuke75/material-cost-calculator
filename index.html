@@ -1323,7 +1323,10 @@ function rebuildSelects() {
   woodTargets.forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
-    sel.innerHTML = '<option value="">選択してください</option>';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.text = '選択してください';
+    sel.replaceChildren(placeholder);
     WOOD_PRICES.forEach(w => {
       const opt = document.createElement('option');
       opt.value = w.pricePerM3;
@@ -1336,7 +1339,10 @@ function rebuildSelects() {
   filamentTargets.forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
-    sel.innerHTML = '<option value="">選択してください</option>';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.text = '選択してください';
+    sel.replaceChildren(placeholder);
     FILAMENT_PRICES.forEach(f => {
       const opt = document.createElement('option');
       opt.value = f.pricePerG;
@@ -1364,7 +1370,7 @@ async function loadPricesFromGAS() {
       const normalizedWoodLen = gasWood ? gasWood.length : 0;
       const normalizedFilamentLen = gasFilament ? gasFilament.length : 0;
       throw new Error(
-        `Invalid price payload: rawWood=${rawWoodLen}, rawFilament=${rawFilamentLen}, normalizedWood=${normalizedWoodLen}, normalizedFilament=${normalizedFilamentLen}`
+        `Invalid price payload (expected non-empty arrays with valid name/price fields): rawWood=${rawWoodLen}, rawFilament=${rawFilamentLen}, normalizedWood=${normalizedWoodLen}, normalizedFilament=${normalizedFilamentLen}`
       );
     }
 
