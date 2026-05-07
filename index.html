@@ -1052,7 +1052,7 @@
     </div>
 
     <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
-      <button class="send-confirm-btn" id="loadGasPricesBtn" onclick="loadPriceMasterFromGAS(true)" style="flex:2; background:#2f855a;">☁️ GAS単価マスタを読み込む</button>
+      <button class="send-confirm-btn" id="loadGasPricesBtn" aria-label="GAS単価マスタを読み込む" onclick="loadPriceMasterFromGAS(true)" style="flex:2; background:#2f855a;">☁️ GAS単価マスタを読み込む</button>
       <button class="send-confirm-btn" onclick="savePrices()" style="flex:2; background:#2b4c7e;">💾 保存する</button>
       <button class="modal-cancel" onclick="resetPricesToDefault()" style="flex:1; padding:14px; border-radius:10px; font-size:0.9rem; font-family:inherit; cursor:pointer;">初期値に戻す</button>
     </div>
@@ -1311,6 +1311,7 @@ function normalizePriceMaster(raw) {
 }
 
 async function fetchPriceMasterFromGAS() {
+  const errors = [];
   const getUrls = [
     `${GAS_URL}?type=price_master`,
     `${GAS_URL}?type=get_price_master`,
@@ -1324,7 +1325,9 @@ async function fetchPriceMasterFromGAS() {
       const json = await res.json();
       const parsed = normalizePriceMaster(json);
       if (parsed) return parsed;
-    } catch (_) {}
+    } catch (e) {
+      errors.push(`GET ${url}: ${e?.message || e}`);
+    }
   }
 
   const postBodies = [
@@ -1344,10 +1347,12 @@ async function fetchPriceMasterFromGAS() {
       const json = await res.json();
       const parsed = normalizePriceMaster(json);
       if (parsed) return parsed;
-    } catch (_) {}
+    } catch (e) {
+      errors.push(`POST ${JSON.stringify(body)}: ${e?.message || e}`);
+    }
   }
 
-  throw new Error('価格マスタ取得失敗');
+  throw new Error(`価格マスタ取得失敗: ${errors.join(' | ')}`);
 }
 
 function rebuildSelectOptions(selectId, items, nameKey, priceKey) {
