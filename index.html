@@ -1302,6 +1302,14 @@ function rebuildSelects() {
   });
 }
 
+function getFirstArrayField(source, paths) {
+  for (const path of paths) {
+    const value = path.split('.').reduce((obj, key) => obj && obj[key], source);
+    if (Array.isArray(value)) return value;
+  }
+  return null;
+}
+
 async function fetchPricesFromGAS() {
   try {
     const res = await fetch(GAS_URL + '?type=prices');
@@ -1311,16 +1319,8 @@ async function fetchPricesFromGAS() {
     }
 
     const data = await res.json();
-    const getFirstArray = (source, paths) => {
-      for (const path of paths) {
-        const value = path.split('.').reduce((obj, key) => obj && obj[key], source);
-        if (Array.isArray(value)) return value;
-      }
-      return null;
-    };
-
-    const gasWood = getFirstArray(data, ['woodPrices', 'WOOD_PRICES', 'wood', 'prices.wood']);
-    const gasFilament = getFirstArray(data, ['filamentPrices', 'FILAMENT_PRICES', 'filament', 'prices.filament']);
+    const gasWood = getFirstArrayField(data, ['woodPrices', 'WOOD_PRICES', 'wood', 'prices.wood']);
+    const gasFilament = getFirstArrayField(data, ['filamentPrices', 'FILAMENT_PRICES', 'filament', 'prices.filament']);
 
     const nextWood = (gasWood || []).map(w => ({
       name: String(w.name || w.species || '').trim(),
