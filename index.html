@@ -1262,9 +1262,9 @@ const DEFAULT_FILAMENT_PRICES = [
   { name: '木質PLA',            pricePerG: 7.0  },
 ];
 
-// localStorageから読み込み（なければデフォルト）
-let WOOD_PRICES = JSON.parse(localStorage.getItem('woodPrices')) || DEFAULT_WOOD_PRICES.map(x => ({...x}));
-let FILAMENT_PRICES = JSON.parse(localStorage.getItem('filamentPrices')) || DEFAULT_FILAMENT_PRICES.map(x => ({...x}));
+// 起動時はデフォルト値、GAS読み込み後に上書き
+let WOOD_PRICES = DEFAULT_WOOD_PRICES.map(x => ({...x}));
+let FILAMENT_PRICES = DEFAULT_FILAMENT_PRICES.map(x => ({...x}));
 
 const MARKUP = 1.2;
 
@@ -1289,6 +1289,32 @@ function init() {
     opt.text = f.name;
     fSel.appendChild(opt);
   });
+}
+
+// GASから単価マスタを読み込む
+async function loadPricesFromGAS() {
+  try {
+    const res = await fetch(GAS_URL + '?action=getPrices');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.status === 'ok') {
+      if (data.wood && data.wood.length > 0) {
+        WOOD_PRICES = data.wood;
+        localStorage.setItem('woodPrices', JSON.stringify(data.wood));
+      }
+      if (data.filament && data.filament.length > 0) {
+        FILAMENT_PRICES = data.filament;
+        localStorage.setItem('filamentPrices', JSON.stringify(data.filament));
+      }
+      console.log('GASから単価を読み込みました（木材' + WOOD_PRICES.length + '件、フィラメント' + FILAMENT_PRICES.length + '件）');
+    }
+  } catch(e) {
+    const savedWood = localStorage.getItem('woodPrices');
+    const savedFilament = localStorage.getItem('filamentPrices');
+    if (savedWood) WOOD_PRICES = JSON.parse(savedWood);
+    if (savedFilament) FILAMENT_PRICES = JSON.parse(savedFilament);
+    console.warn('GAS価格読み込み失敗。キャッシュまたはデフォルト値を使用します。', e);
+  }
 }
 
 // タブ切替
@@ -1597,7 +1623,7 @@ function resetAll() {
   calcFilament();
 }
 
-init();
+loadPricesFromGAS().then(() => init());
 
 // URLパラメータで教員モード判定（PIN保護）
 (function() {
