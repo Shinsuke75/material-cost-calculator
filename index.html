@@ -1325,8 +1325,9 @@ function init() {
         localStorage.setItem('filamentPrices', JSON.stringify(FILAMENT_PRICES));
       }
     })
-    .catch(() => {
+    .catch(err => {
       // ネットワークエラー時はlocalStorage/デフォルト値をそのまま使用
+      console.warn('価格データの取得に失敗しました。ローカルデータを使用します。', err);
     })
     .finally(() => {
       rebuildSelects();
