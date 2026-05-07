@@ -821,6 +821,12 @@
     <div class="card-title">👩‍🏫 教員モード：確認依頼</div>
     <div class="teacher-notice">📌 このモードでは、利用者が使用した材料を記録し、確認依頼を送ることができます。利用者がOKを押すと記録が確定します。</div>
 
+    <!-- 教員名 -->
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>担当教員名</label>
+      <input type="text" id="teacherName" placeholder="例：加藤" oninput="updateTeacherSendBtn()" style="max-width:200px;">
+    </div>
+
     <!-- 対象利用者 -->
     <div class="student-row" style="margin-bottom:18px;">
       <div class="form-group" style="max-width:180px;">
@@ -1667,9 +1673,10 @@ function removeTeacherItem(idx) {
 }
 
 function updateTeacherSendBtn() {
+  const hasTeacher = document.getElementById('teacherName').value.trim() !== '';
   const hasId = document.getElementById('tStudentId').value.trim() !== '';
   const hasName = document.getElementById('tStudentName').value.trim() !== '';
-  document.getElementById('tSendBtn').disabled = !(hasId && hasName && tItems.length > 0);
+  document.getElementById('tSendBtn').disabled = !(hasTeacher && hasId && hasName && tItems.length > 0);
 }
 
 let pendingRequests = [];
@@ -1692,10 +1699,11 @@ function generateRequestURL() {
   const id = document.getElementById('tStudentId').value.trim();
   const name = document.getElementById('tStudentName').value.trim();
   const notes = document.getElementById('tNotes').value;
+  const teacherName = document.getElementById('teacherName').value.trim() || '担当教員';
 
   const req = {
     id: 'req-' + Date.now(),
-    teacher: '担当教員',
+    teacher: teacherName,
     date: new Date().toISOString().slice(0, 10),
     materials: [...tItems],
     notes,
@@ -1727,6 +1735,7 @@ function copyRequestURL() {
 function resetTeacher() {
   tItems = [];
   renderTeacherList();
+  document.getElementById('teacherName').value = '';
   document.getElementById('tStudentId').value = '';
   document.getElementById('tStudentName').value = '';
   document.getElementById('tNotes').value = '';
@@ -1782,11 +1791,26 @@ function renderPendingList() {
 
 function approveRequest(reqId) {
   const req = pendingRequests.find(r => r.id === reqId);
-  if (req) {
-    req.status = 'approved';
-    req._justApproved = true;
-    renderPendingList();
-  }
+  if (!req) return;
+
+  const materialText = req.materials.map(m =>
+    `${m.type === 'wood' ? '木材' : 'フィラメント'}: ${m.name}（${m.detail}）¥${m.price.toLocaleString()}`
+  ).join(' / ');
+  const total = req.materials.reduce((s, m) => s + m.price, 0);
+
+  const FORM_BASE = 'https://docs.google.com/forms/d/e/1FAIpQLSdOukEoMgURIzyHi4ubUQvxITkY4pJvU6fz8NvJ-PkyuHuLwQ/viewform?usp=pp_url';
+  const params = new URLSearchParams({
+    'entry.1504820662': req.targetStudent || '',
+    'entry.116801571': req.targetName || '',
+    'entry.2131404964': `【教員請求・${req.teacher}】${materialText}`,
+    'entry.1682844209': String(total),
+    'entry.1378369641': req.notes || '',
+  });
+  window.open(FORM_BASE + '&' + params.toString(), '_blank');
+
+  req.status = 'approved';
+  req._justApproved = true;
+  renderPendingList();
 }
 
 loadFromURL();
