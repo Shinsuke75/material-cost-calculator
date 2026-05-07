@@ -1308,6 +1308,8 @@ async function loadPricesWithFallback() {
     }
     WOOD_PRICES = data.woodPrices;
     FILAMENT_PRICES = data.filamentPrices;
+    localStorage.setItem('woodPrices', JSON.stringify(WOOD_PRICES));
+    localStorage.setItem('filamentPrices', JSON.stringify(FILAMENT_PRICES));
   } catch (e) {
     WOOD_PRICES = DEFAULT_WOOD_PRICES.map(x => ({ ...x }));
     FILAMENT_PRICES = DEFAULT_FILAMENT_PRICES.map(x => ({ ...x }));
