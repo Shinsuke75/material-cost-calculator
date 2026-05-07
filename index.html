@@ -1304,7 +1304,7 @@ function rebuildSelects() {
 
 function getFirstArrayField(source, paths) {
   for (const path of paths) {
-    const value = path.split('.').reduce((obj, key) => obj && obj[key], source);
+    const value = path.split('.').reduce((obj, key) => obj?.[key], source);
     if (Array.isArray(value)) return value;
   }
   return null;
