@@ -1274,7 +1274,13 @@ let filamentCalcPrice = 0;
 
 // 初期化
 function init() {
+  rebuildSelects();
+  fetchPricesFromGAS();
+}
+
+function rebuildSelects() {
   const wSel = document.getElementById('woodSpecies');
+  wSel.innerHTML = '<option value="">選択してください</option>';
   WOOD_PRICES.forEach(w => {
     const opt = document.createElement('option');
     opt.value = w.pricePerM3;
@@ -1283,12 +1289,60 @@ function init() {
   });
 
   const fSel = document.getElementById('filamentType');
+  fSel.innerHTML = '<option value="">選択してください</option>';
   FILAMENT_PRICES.forEach(f => {
     const opt = document.createElement('option');
     opt.value = f.pricePerG;
     opt.text = f.name;
     fSel.appendChild(opt);
   });
+}
+
+async function fetchPricesFromGAS() {
+  try {
+    const res = await fetch(GAS_URL + '?type=prices');
+    if (!res.ok) return;
+
+    const data = await res.json();
+    const gasWood = Array.isArray(data.woodPrices) ? data.woodPrices
+      : Array.isArray(data.WOOD_PRICES) ? data.WOOD_PRICES
+      : Array.isArray(data.wood) ? data.wood
+      : Array.isArray(data.prices?.wood) ? data.prices.wood
+      : null;
+    const gasFilament = Array.isArray(data.filamentPrices) ? data.filamentPrices
+      : Array.isArray(data.FILAMENT_PRICES) ? data.FILAMENT_PRICES
+      : Array.isArray(data.filament) ? data.filament
+      : Array.isArray(data.prices?.filament) ? data.prices.filament
+      : null;
+
+    const nextWood = (gasWood || []).map(w => ({
+      name: String(w.name || w.species || '').trim(),
+      pricePerM3: Number(w.pricePerM3 ?? w.price ?? w.unitPrice ?? 0),
+    })).filter(w => w.name && Number.isFinite(w.pricePerM3) && w.pricePerM3 > 0);
+
+    const nextFilament = (gasFilament || []).map(f => ({
+      name: String(f.name || f.type || '').trim(),
+      pricePerG: Number(f.pricePerG ?? f.price ?? f.unitPrice ?? 0),
+    })).filter(f => f.name && Number.isFinite(f.pricePerG) && f.pricePerG > 0);
+
+    if (nextWood.length > 0) {
+      WOOD_PRICES = nextWood;
+      localStorage.setItem('woodPrices', JSON.stringify(WOOD_PRICES));
+    }
+    if (nextFilament.length > 0) {
+      FILAMENT_PRICES = nextFilament;
+      localStorage.setItem('filamentPrices', JSON.stringify(FILAMENT_PRICES));
+    }
+
+    if (nextWood.length > 0 || nextFilament.length > 0) {
+      rebuildSelects();
+      renderPriceEditList();
+      calcWood();
+      calcFilament();
+    }
+  } catch (e) {
+    console.warn('価格マスタ取得エラー', e);
+  }
 }
 
 // タブ切替
