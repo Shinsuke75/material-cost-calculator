@@ -1581,7 +1581,9 @@ async function submitForm() {
   const modalBtnText = modalConfirmBtn ? modalConfirmBtn.textContent : '';
 
   closeModal();
-  hint.classList.remove('gas-error-msg');
+  if (hint) {
+    hint.classList.remove('gas-error-msg');
+  }
   if (submitBtn) {
     submitBtn.disabled = true;
     submitBtn.textContent = '⏳ 送信中…';
@@ -1626,8 +1628,10 @@ async function submitForm() {
       modalConfirmBtn.disabled = false;
       modalConfirmBtn.textContent = modalBtnText;
     }
-    hint.textContent = '⚠️ 送信に失敗しました。もう一度お試しください。';
-    hint.style.display = 'block';
+    if (hint) {
+      hint.textContent = '⚠️ 送信に失敗しました。もう一度お試しください。';
+      hint.style.display = 'block';
+    }
   }
 }
 
