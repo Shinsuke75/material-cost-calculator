@@ -1813,9 +1813,19 @@ function copyRequestURL() {
 function openTeamsWithURL() {
   const url = document.getElementById('tGeneratedUrl').value;
   const studentName = document.getElementById('tStudentName').value.trim() || '学生';
-  const message = encodeURIComponent('【材料費確認依頼】\n' + studentName + 'さん、以下のURLを開いて材料費の確認をお願いします。\n' + url);
-  // msteams:// でTeamsアプリを起動（新規チャット作成画面）
-  window.open('msteams://teams.microsoft.com/l/chat/0/0?message=' + message, '_blank');
+  const message = '【材料費確認依頼】\n' + studentName + 'さん、以下のURLを開いて材料費の確認をお願いします。\n' + url;
+  // メッセージをクリップボードにコピー
+  navigator.clipboard.writeText(message).then(() => {
+    // Teamsを起動
+    window.open('msteams://', '_blank');
+    // ガイドメッセージを表示
+    const msg = document.getElementById('tCopyMsg');
+    msg.textContent = '✅ メッセージをコピーしました！Teamsで学生を選んで貼り付けてください';
+    msg.style.display = 'block';
+    setTimeout(() => { msg.style.display = 'none'; msg.textContent = '✅ コピーしました！Teamsに貼り付けて送ってください'; }, 5000);
+  }).catch(() => {
+    window.open('msteams://', '_blank');
+  });
 }
 
 function resetTeacher() {
