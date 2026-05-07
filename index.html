@@ -1052,7 +1052,7 @@
     </div>
 
     <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
-      <button class="send-confirm-btn" id="loadGasPricesBtn" aria-label="GAS単価マスタを読み込む" onclick="loadPriceMasterFromGAS(true)" style="flex:2; background:#2f855a;">☁️ GAS単価マスタを読み込む</button>
+      <button class="send-confirm-btn" id="loadGasPricesBtn" onclick="loadPriceMasterFromGAS(true)" style="flex:2; background:#2f855a;">☁️ GAS単価マスタを読み込む</button>
       <button class="send-confirm-btn" onclick="savePrices()" style="flex:2; background:#2b4c7e;">💾 保存する</button>
       <button class="modal-cancel" onclick="resetPricesToDefault()" style="flex:1; padding:14px; border-radius:10px; font-size:0.9rem; font-family:inherit; cursor:pointer;">初期値に戻す</button>
     </div>
@@ -1288,23 +1288,22 @@ function showPriceMsg(text, isError = false) {
 
 function normalizePriceMaster(raw) {
   if (!raw || typeof raw !== 'object') return null;
+  // GAS側の返却形式差異（data/result直下、wood/woodPrices など）を吸収する
   const src = raw.data || raw.result || raw;
   const woodRaw = src.woodPrices || src.wood || src.woodMaster || src.woods || [];
   const filamentRaw = src.filamentPrices || src.filament || src.filamentMaster || src.filaments || [];
 
-  const woodPrices = Array.isArray(woodRaw)
-    ? woodRaw.map(x => ({
-        name: String(x.name || x.species || '').trim(),
-        pricePerM3: Number(x.pricePerM3 ?? x.price ?? x.unitPrice ?? 0),
-      })).filter(x => x.name && Number.isFinite(x.pricePerM3) && x.pricePerM3 > 0)
-    : [];
+  function normalizePriceArray(rawList, nameKeys, priceKeys, priceField) {
+    if (!Array.isArray(rawList)) return [];
+    return rawList.map(x => {
+      const name = String(nameKeys.map(k => x[k]).find(v => v) || '').trim();
+      const price = Number(priceKeys.map(k => x[k]).find(v => v != null) ?? 0);
+      return { name, [priceField]: price };
+    }).filter(x => x.name && Number.isFinite(x[priceField]) && x[priceField] > 0);
+  }
 
-  const filamentPrices = Array.isArray(filamentRaw)
-    ? filamentRaw.map(x => ({
-        name: String(x.name || x.type || '').trim(),
-        pricePerG: Number(x.pricePerG ?? x.price ?? x.unitPrice ?? 0),
-      })).filter(x => x.name && Number.isFinite(x.pricePerG) && x.pricePerG > 0)
-    : [];
+  const woodPrices = normalizePriceArray(woodRaw, ['name', 'species'], ['pricePerM3', 'price', 'unitPrice'], 'pricePerM3');
+  const filamentPrices = normalizePriceArray(filamentRaw, ['name', 'type'], ['pricePerG', 'price', 'unitPrice'], 'pricePerG');
 
   if (!woodPrices.length && !filamentPrices.length) return null;
   return { woodPrices, filamentPrices };
@@ -1352,7 +1351,9 @@ async function fetchPriceMasterFromGAS() {
     }
   }
 
-  throw new Error(`価格マスタ取得失敗: ${errors.join(' | ')}`);
+  const preview = errors.slice(0, 3).join(' | ');
+  const omitted = errors.length > 3 ? ` ...(+${errors.length - 3}件)` : '';
+  throw new Error(`価格マスタ取得失敗: ${preview}${omitted}`);
 }
 
 function rebuildSelectOptions(selectId, items, nameKey, priceKey) {
