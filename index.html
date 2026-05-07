@@ -799,6 +799,26 @@
     accent-color: #2b4c7e;
     cursor: pointer;
   }
+
+  /* ===== バリデーション ===== */
+  input.field-error {
+    border-color: #e53e3e !important;
+    background: #fff5f5 !important;
+    animation: fieldShake 0.35s ease;
+  }
+  @keyframes fieldShake {
+    0%,100% { transform: translateX(0); }
+    20%,60%  { transform: translateX(-5px); }
+    40%,80%  { transform: translateX(5px); }
+  }
+  .submit-hint {
+    font-size: 0.82rem;
+    color: #e53e3e;
+    margin-top: 6px;
+    display: none;
+    text-align: center;
+    font-weight: 600;
+  }
 </style>
 </head>
 <body>
@@ -1178,9 +1198,10 @@
         <label>備考・用途など（任意）</label>
         <textarea id="notes" rows="3" placeholder="例：授業の課題制作、椅子の脚材として使用"></textarea>
       </div>
-      <button class="submit-btn" id="submitBtn" onclick="showConfirm()" disabled>
+      <button class="submit-btn" id="submitBtn" onclick="showConfirm()">
         📋 内容を確認して申請フォームを開く
       </button>
+      <div id="submitHint" class="submit-hint">⚠️ 学籍番号・氏名を入力してください</div>
       <div style="margin-top:10px; font-size:0.82rem; color:#e53e3e; background:#fff5f5; border:1px solid #fed7d7; border-radius:8px; padding:8px 12px;">
         ⚠️ 申請フォームは<strong>学校のGoogleアカウント（学籍番号@stumail.daido-it.ac.jp）</strong>でログインしている必要があります。個人アカウントではエラーになります。
       </div>
@@ -1420,7 +1441,17 @@ function updateSubmitBtn() {
   const hasId = isStudent ? document.getElementById('studentId').value.trim() !== '' : true;
   const hasName = document.getElementById('studentName').value.trim() !== '';
   const hasItems = items.length > 0;
-  document.getElementById('submitBtn').disabled = !(hasId && hasName && hasItems);
+  const valid = hasId && hasName && hasItems;
+  const btn = document.getElementById('submitBtn');
+  btn.style.opacity = valid ? '1' : '0.7';
+  // エラー表示中なら再評価でクリア
+  if (valid) {
+    document.getElementById('submitHint').style.display = 'none';
+    ['studentId','studentName'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('field-error');
+    });
+  }
 }
 
 // 比較機能
@@ -1472,6 +1503,35 @@ function showConfirm() {
   const name = document.getElementById('studentName').value.trim();
   const total = items.reduce((s, i) => s + i.price, 0);
   const notes = document.getElementById('notes').value;
+
+  // ── バリデーション ──
+  let hasError = false;
+  const idInput = document.getElementById('studentId');
+  const nameInput = document.getElementById('studentName');
+  if (isStudent && id === '') {
+    idInput.classList.add('field-error');
+    hasError = true;
+  } else {
+    idInput.classList.remove('field-error');
+  }
+  if (name === '') {
+    nameInput.classList.add('field-error');
+    hasError = true;
+  } else {
+    nameInput.classList.remove('field-error');
+  }
+  if (items.length === 0) { hasError = true; }
+  const hint = document.getElementById('submitHint');
+  if (hasError) {
+    if (items.length === 0 && id !== '' && name !== '') {
+      hint.textContent = '⚠️ 材料を1件以上追加してください';
+    } else {
+      hint.textContent = '⚠️ ' + (isStudent && id==='' ? '学籍番号・' : '') + (name==='' ? '氏名' : '') + 'を入力してください';
+    }
+    hint.style.display = 'block';
+    return;
+  }
+  hint.style.display = 'none';
 
   document.getElementById('modalContent').innerHTML = `
     <div class="modal-row"><span class="m-label">区分</span><span class="m-val">${isStudent ? '学生' : 'その他（教職員等）'}</span></div>
@@ -1537,12 +1597,13 @@ function resetAll() {
 
 init();
 
-// URLパラメータで教員モード判定
+// URLパラメータで教員モード判定（PIN保護）
 (function() {
   const params = new URLSearchParams(window.location.search);
   if (params.has('teacher')) {
     document.getElementById('modeSwitcher').style.display = 'flex';
-    setMode('teacher');
+    createPinModal();
+    showTeacherPinDialog();
   }
 })();
 
@@ -1998,36 +2059,63 @@ function applyFilamentPurchasePrice(price) {
   document.getElementById('newFilamentName').focus();
 }
 
-function rebuildSelects() {
-  ['woodSpecies', 'tWoodSpecies'].forEach(id => {
-    const sel = document.getElementById(id);
-    sel.innerHTML = '<option value="">選択してください</option>';
-    WOOD_PRICES.forEach(w => {
-      const opt = document.createElement('option');
-      opt.value = w.pricePerM3;
-      opt.text = w.name;
-      sel.appendChild(opt);
-    });
-  });
-  ['filamentType', 'tFilamentType'].forEach(id => {
-    const sel = document.getElementById(id);
-    sel.innerHTML = '<option value="">選択してください</option>';
-    FILAMENT_PRICES.forEach(f => {
-      const opt = document.createElement('option');
-      opt.value = f.pricePerG;
-      opt.text = f.name;
-      sel.appendChild(opt);
-    });
-  });
+// =====================
+// 教員モードPIN保護
+// =====================
+const TEACHER_PIN = '1234'; // ← 必要に応じて変更してください
+
+function createPinModal() {
+  if (document.getElementById('teacherPinOverlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'teacherPinOverlay';
+  overlay.style.cssText = 'display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;';
+  overlay.innerHTML = \`
+    <div style="background:white;border-radius:20px;padding:36px 32px;max-width:320px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <div style="font-size:2.4rem;margin-bottom:8px;">🔐</div>
+      <h3 style="margin:0 0 6px;font-size:1.1rem;color:#2d3748;">教員モード</h3>
+      <p style="font-size:0.83rem;color:#718096;margin-bottom:20px;">PINを入力してください</p>
+      <input type="password" id="teacherPinInput"
+        style="width:100%;border:2px solid #e2e8f0;border-radius:10px;padding:12px;font-size:1.4rem;text-align:center;letter-spacing:6px;box-sizing:border-box;outline:none;"
+        placeholder="••••" maxlength="8"
+        onkeydown="if(event.key==='Enter')checkTeacherPin()"
+        oninput="document.getElementById('teacherPinError').style.display='none';document.getElementById('teacherPinInput').style.borderColor='#e2e8f0';">
+      <div id="teacherPinError" style="color:#e53e3e;font-size:0.82rem;margin-top:8px;display:none;">PINが違います</div>
+      <button onclick="checkTeacherPin()" style="margin-top:18px;background:#667eea;color:white;border:none;border-radius:10px;padding:12px 0;font-size:1rem;cursor:pointer;width:100%;font-weight:700;">確認</button>
+      <button onclick="cancelTeacherPin()" style="margin-top:10px;background:none;border:none;color:#a0aec0;font-size:0.85rem;cursor:pointer;width:100%;">キャンセル</button>
+    </div>
+  \`;
+  document.body.appendChild(overlay);
 }
 
-// 教員モード用セレクト初期化
-(function() {
-  rebuildSelects();
-  document.getElementById('teacherMode').style.display = 'none';
-  document.getElementById('priceEditCard').style.display = 'none';
-  renderPriceEditList();
-})();
+function showTeacherPinDialog() {
+  const overlay = document.getElementById('teacherPinOverlay');
+  if (overlay) {
+    overlay.style.display = 'flex';
+    setTimeout(() => {
+      const input = document.getElementById('teacherPinInput');
+      if (input) { input.value = ''; input.focus(); }
+    }, 150);
+  }
+}
+
+function checkTeacherPin() {
+  const input = document.getElementById('teacherPinInput');
+  if (!input) return;
+  if (input.value === TEACHER_PIN) {
+    document.getElementById('teacherPinOverlay').style.display = 'none';
+    setMode('teacher');
+  } else {
+    document.getElementById('teacherPinError').style.display = 'block';
+    input.style.borderColor = '#e53e3e';
+    input.value = '';
+    input.focus();
+  }
+}
+
+function cancelTeacherPin() {
+  document.getElementById('teacherPinOverlay').style.display = 'none';
+  history.replaceState(null, '', window.location.pathname);
+}
 </script>
 </body>
 </html>
