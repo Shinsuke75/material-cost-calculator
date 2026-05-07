@@ -1272,23 +1272,87 @@ let items = [];
 let woodCalcPrice = 0;
 let filamentCalcPrice = 0;
 
+function setSelectOptions(selectId, prices, valueKey) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  const selected = select.value;
+  select.innerHTML = '<option value="">選択してください</option>';
+  prices.forEach(item => {
+    const opt = document.createElement('option');
+    opt.value = item[valueKey];
+    opt.text = item.name;
+    select.appendChild(opt);
+  });
+  if ([...select.options].some(o => o.value === selected)) {
+    select.value = selected;
+  }
+}
+
+function rebuildSelects() {
+  setSelectOptions('woodSpecies', WOOD_PRICES, 'pricePerM3');
+  setSelectOptions('tWoodSpecies', WOOD_PRICES, 'pricePerM3');
+  setSelectOptions('filamentType', FILAMENT_PRICES, 'pricePerG');
+  setSelectOptions('tFilamentType', FILAMENT_PRICES, 'pricePerG');
+}
+
+function normalizeWoodPrices(values) {
+  if (!Array.isArray(values)) return null;
+  const normalized = values.map(v => ({
+    name: String(v?.name || '').trim(),
+    pricePerM3: Number(v?.pricePerM3),
+  })).filter(v => v.name !== '' && Number.isFinite(v.pricePerM3) && v.pricePerM3 > 0);
+  return normalized.length > 0 ? normalized : null;
+}
+
+function normalizeFilamentPrices(values) {
+  if (!Array.isArray(values)) return null;
+  const normalized = values.map(v => ({
+    name: String(v?.name || '').trim(),
+    pricePerG: Number(v?.pricePerG),
+  })).filter(v => v.name !== '' && Number.isFinite(v.pricePerG) && v.pricePerG > 0);
+  return normalized.length > 0 ? normalized : null;
+}
+
+function applyFetchedPrices(data) {
+  const woodPrices = normalizeWoodPrices(
+    data?.woodPrices || data?.wood || data?.woods || data?.WOOD_PRICES
+  );
+  const filamentPrices = normalizeFilamentPrices(
+    data?.filamentPrices || data?.filament || data?.filaments || data?.FILAMENT_PRICES
+  );
+  if (!woodPrices && !filamentPrices) return false;
+  if (woodPrices) {
+    WOOD_PRICES = woodPrices;
+    localStorage.setItem('woodPrices', JSON.stringify(WOOD_PRICES));
+  }
+  if (filamentPrices) {
+    FILAMENT_PRICES = filamentPrices;
+    localStorage.setItem('filamentPrices', JSON.stringify(FILAMENT_PRICES));
+  }
+  return true;
+}
+
+async function fetchPricesOnLoad() {
+  try {
+    const res = await fetch(GAS_URL + '?action=getPrices');
+    if (!res.ok) throw new Error(`status=${res.status}`);
+    const data = await res.json();
+    if (!applyFetchedPrices(data)) return;
+    rebuildSelects();
+    renderPriceEditList();
+    calcWood();
+    calcFilament();
+    calcTeacherWood();
+    calcTeacherFilament();
+  } catch (e) {
+    console.warn('GAS価格取得エラー', e);
+  }
+}
+
 // 初期化
 function init() {
-  const wSel = document.getElementById('woodSpecies');
-  WOOD_PRICES.forEach(w => {
-    const opt = document.createElement('option');
-    opt.value = w.pricePerM3;
-    opt.text = w.name;
-    wSel.appendChild(opt);
-  });
-
-  const fSel = document.getElementById('filamentType');
-  FILAMENT_PRICES.forEach(f => {
-    const opt = document.createElement('option');
-    opt.value = f.pricePerG;
-    opt.text = f.name;
-    fSel.appendChild(opt);
-  });
+  rebuildSelects();
+  renderPriceEditList();
 }
 
 // タブ切替
@@ -1598,6 +1662,7 @@ function resetAll() {
 }
 
 init();
+fetchPricesOnLoad();
 
 // URLパラメータで教員モード判定（PIN保護）
 (function() {
