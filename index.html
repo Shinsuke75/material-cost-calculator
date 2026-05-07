@@ -1272,23 +1272,65 @@ let items = [];
 let woodCalcPrice = 0;
 let filamentCalcPrice = 0;
 
+// ローディング中表示
+function setSelectsLoading() {
+  ['woodSpecies', 'filamentType', 'tWoodSpecies', 'tFilamentType'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '<option disabled selected>読み込み中...</option>';
+    sel.disabled = true;
+  });
+}
+
+// セレクトボックス再構築
+function rebuildSelects() {
+  ['woodSpecies', 'tWoodSpecies'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.disabled = false;
+    sel.innerHTML = '<option value="">選択してください</option>';
+    WOOD_PRICES.forEach(w => {
+      const opt = document.createElement('option');
+      opt.value = w.pricePerM3;
+      opt.text = w.name;
+      sel.appendChild(opt);
+    });
+  });
+  ['filamentType', 'tFilamentType'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.disabled = false;
+    sel.innerHTML = '<option value="">選択してください</option>';
+    FILAMENT_PRICES.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.pricePerG;
+      opt.text = f.name;
+      sel.appendChild(opt);
+    });
+  });
+}
+
 // 初期化
 function init() {
-  const wSel = document.getElementById('woodSpecies');
-  WOOD_PRICES.forEach(w => {
-    const opt = document.createElement('option');
-    opt.value = w.pricePerM3;
-    opt.text = w.name;
-    wSel.appendChild(opt);
-  });
-
-  const fSel = document.getElementById('filamentType');
-  FILAMENT_PRICES.forEach(f => {
-    const opt = document.createElement('option');
-    opt.value = f.pricePerG;
-    opt.text = f.name;
-    fSel.appendChild(opt);
-  });
+  setSelectsLoading();
+  fetch(GAS_URL + '?type=prices')
+    .then(res => res.json())
+    .then(data => {
+      if (data.woodPrices && Array.isArray(data.woodPrices)) {
+        WOOD_PRICES = data.woodPrices;
+        localStorage.setItem('woodPrices', JSON.stringify(WOOD_PRICES));
+      }
+      if (data.filamentPrices && Array.isArray(data.filamentPrices)) {
+        FILAMENT_PRICES = data.filamentPrices;
+        localStorage.setItem('filamentPrices', JSON.stringify(FILAMENT_PRICES));
+      }
+    })
+    .catch(() => {
+      // ネットワークエラー時はlocalStorage/デフォルト値をそのまま使用
+    })
+    .finally(() => {
+      rebuildSelects();
+    });
 }
 
 // タブ切替
