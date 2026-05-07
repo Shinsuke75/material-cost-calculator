@@ -1052,8 +1052,7 @@
     </div>
 
     <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
-      <button class="send-confirm-btn" onclick="savePrices()" style="flex:2; background:#2b4c7e;">💾 保存する</button>
-      <button class="modal-cancel" onclick="resetPricesToDefault()" style="flex:1; padding:14px; border-radius:10px; font-size:0.9rem; font-family:inherit; cursor:pointer;">初期値に戻す</button>
+      <button class="send-confirm-btn" onclick="savePrices()" style="flex:1; background:#2b4c7e;">💾 保存する</button>
     </div>
     <div id="priceSaveMsg" style="display:none; text-align:center; color:#276749; font-weight:700; margin-top:10px; font-size:0.9rem;">✅ 保存しました</div>
   </div>
@@ -1972,6 +1971,7 @@ function addWoodPrice() {
   document.getElementById('newWoodName').value = '';
   document.getElementById('newWoodPrice').value = '';
   renderPriceEditList();
+  rebuildSelects();
 }
 
 function addFilamentPrice() {
@@ -1982,6 +1982,7 @@ function addFilamentPrice() {
   document.getElementById('newFilamentName').value = '';
   document.getElementById('newFilamentPrice').value = '';
   renderPriceEditList();
+  rebuildSelects();
 }
 
 // セレクトボックスを最新のWOOD_PRICES/FILAMENT_PRICESで再構築
@@ -2010,6 +2011,17 @@ function savePrices() {
   localStorage.setItem('filamentPrices', JSON.stringify(FILAMENT_PRICES));
   // セレクトボックスを再構築
   rebuildSelects();
+  // GASにも保存
+  fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'updatePrices',
+      wood: WOOD_PRICES,
+      filament: FILAMENT_PRICES
+    })
+  }).catch(e => console.warn('GAS単価保存エラー:', e));
   const msg = document.getElementById('priceSaveMsg');
   msg.style.display = 'block';
   setTimeout(() => msg.style.display = 'none', 2500);
