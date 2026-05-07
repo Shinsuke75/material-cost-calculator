@@ -1304,16 +1304,16 @@ async function fetchPricesFromGAS() {
     if (!res.ok) return;
 
     const data = await res.json();
-    const gasWood = Array.isArray(data.woodPrices) ? data.woodPrices
-      : Array.isArray(data.WOOD_PRICES) ? data.WOOD_PRICES
-      : Array.isArray(data.wood) ? data.wood
-      : Array.isArray(data.prices?.wood) ? data.prices.wood
-      : null;
-    const gasFilament = Array.isArray(data.filamentPrices) ? data.filamentPrices
-      : Array.isArray(data.FILAMENT_PRICES) ? data.FILAMENT_PRICES
-      : Array.isArray(data.filament) ? data.filament
-      : Array.isArray(data.prices?.filament) ? data.prices.filament
-      : null;
+    const getFirstArray = (source, paths) => {
+      for (const path of paths) {
+        const value = path.split('.').reduce((obj, key) => obj && obj[key], source);
+        if (Array.isArray(value)) return value;
+      }
+      return null;
+    };
+
+    const gasWood = getFirstArray(data, ['woodPrices', 'WOOD_PRICES', 'wood', 'prices.wood']);
+    const gasFilament = getFirstArray(data, ['filamentPrices', 'FILAMENT_PRICES', 'filament', 'prices.filament']);
 
     const nextWood = (gasWood || []).map(w => ({
       name: String(w.name || w.species || '').trim(),
@@ -1337,8 +1337,8 @@ async function fetchPricesFromGAS() {
     if (nextWood.length > 0 || nextFilament.length > 0) {
       rebuildSelects();
       renderPriceEditList();
-      calcWood();
-      calcFilament();
+      if (document.getElementById('woodSpecies').value) calcWood();
+      if (document.getElementById('filamentType').value) calcFilament();
     }
   } catch (e) {
     console.warn('価格マスタ取得エラー', e);
