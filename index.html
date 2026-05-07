@@ -1384,9 +1384,8 @@ async function bootstrap() {
     init();
   } catch (e) {
     console.warn('Initial UI setup failed', e);
-  } finally {
-    await loadPricesFromGAS();
   }
+  await loadPricesFromGAS();
 }
 
 // タブ切替
