@@ -1262,9 +1262,45 @@ const DEFAULT_FILAMENT_PRICES = [
   { name: '木質PLA',            pricePerG: 7.0  },
 ];
 
-// localStorageから読み込み（なければデフォルト）
-let WOOD_PRICES = JSON.parse(localStorage.getItem('woodPrices')) || DEFAULT_WOOD_PRICES.map(x => ({...x}));
-let FILAMENT_PRICES = JSON.parse(localStorage.getItem('filamentPrices')) || DEFAULT_FILAMENT_PRICES.map(x => ({...x}));
+function cloneDefaults() {
+  return {
+    wood: DEFAULT_WOOD_PRICES.map(x => ({ ...x })),
+    filament: DEFAULT_FILAMENT_PRICES.map(x => ({ ...x })),
+  };
+}
+
+function sanitizeWoodPrices(prices) {
+  if (!Array.isArray(prices)) return null;
+  const normalized = prices
+    .map(x => ({ name: String(x?.name || '').trim(), pricePerM3: Number(x?.pricePerM3) }))
+    .filter(x => x.name && Number.isFinite(x.pricePerM3) && x.pricePerM3 >= 0);
+  return normalized.length ? normalized : null;
+}
+
+function sanitizeFilamentPrices(prices) {
+  if (!Array.isArray(prices)) return null;
+  const normalized = prices
+    .map(x => ({ name: String(x?.name || '').trim(), pricePerG: Number(x?.pricePerG) }))
+    .filter(x => x.name && Number.isFinite(x.pricePerG) && x.pricePerG >= 0);
+  return normalized.length ? normalized : null;
+}
+
+function readPricesFromLocalStorage() {
+  let wood = null;
+  let filament = null;
+  try {
+    wood = sanitizeWoodPrices(JSON.parse(localStorage.getItem('woodPrices')));
+  } catch (_) {}
+  try {
+    filament = sanitizeFilamentPrices(JSON.parse(localStorage.getItem('filamentPrices')));
+  } catch (_) {}
+  return { wood, filament };
+}
+
+const defaults = cloneDefaults();
+const storedPrices = readPricesFromLocalStorage();
+let WOOD_PRICES = storedPrices.wood || defaults.wood;
+let FILAMENT_PRICES = storedPrices.filament || defaults.filament;
 
 const MARKUP = 1.2;
 
@@ -1274,21 +1310,66 @@ let filamentCalcPrice = 0;
 
 // 初期化
 function init() {
-  const wSel = document.getElementById('woodSpecies');
-  WOOD_PRICES.forEach(w => {
-    const opt = document.createElement('option');
-    opt.value = w.pricePerM3;
-    opt.text = w.name;
-    wSel.appendChild(opt);
+  rebuildSelects();
+  renderPriceEditList();
+}
+
+function rebuildSelects() {
+  const woodTargets = ['woodSpecies', 'tWoodSpecies'];
+  woodTargets.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">選択してください</option>';
+    WOOD_PRICES.forEach(w => {
+      const opt = document.createElement('option');
+      opt.value = w.pricePerM3;
+      opt.text = w.name;
+      sel.appendChild(opt);
+    });
   });
 
-  const fSel = document.getElementById('filamentType');
-  FILAMENT_PRICES.forEach(f => {
-    const opt = document.createElement('option');
-    opt.value = f.pricePerG;
-    opt.text = f.name;
-    fSel.appendChild(opt);
+  const filamentTargets = ['filamentType', 'tFilamentType'];
+  filamentTargets.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">選択してください</option>';
+    FILAMENT_PRICES.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.pricePerG;
+      opt.text = f.name;
+      sel.appendChild(opt);
+    });
   });
+
+  calcWood();
+  calcFilament();
+  calcTeacherWood();
+  calcTeacherFilament();
+}
+
+async function loadPricesFromGAS() {
+  try {
+    const response = await fetch(`${GAS_URL}?action=getPrices`, { method: 'GET', cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const gasWood = sanitizeWoodPrices(data?.wood);
+    const gasFilament = sanitizeFilamentPrices(data?.filament);
+    if (!gasWood || !gasFilament) throw new Error('Invalid price payload');
+
+    WOOD_PRICES = gasWood;
+    FILAMENT_PRICES = gasFilament;
+    localStorage.setItem('woodPrices', JSON.stringify(WOOD_PRICES));
+    localStorage.setItem('filamentPrices', JSON.stringify(FILAMENT_PRICES));
+    rebuildSelects();
+    renderPriceEditList();
+  } catch (e) {
+    console.warn('単価マスタ取得エラー', e);
+  }
+}
+
+async function bootstrap() {
+  init();
+  await loadPricesFromGAS();
 }
 
 // タブ切替
@@ -1597,7 +1678,7 @@ function resetAll() {
   calcFilament();
 }
 
-init();
+bootstrap();
 
 // URLパラメータで教員モード判定（PIN保護）
 (function() {
