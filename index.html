@@ -1359,7 +1359,13 @@ async function loadPricesFromGAS() {
     const gasWood = sanitizeWoodPrices(data?.wood);
     const gasFilament = sanitizeFilamentPrices(data?.filament);
     if (!gasWood || !gasFilament) {
-      throw new Error(`Invalid price payload: wood=${!!gasWood}, filament=${!!gasFilament}`);
+      const rawWoodLen = Array.isArray(data?.wood) ? data.wood.length : 'n/a';
+      const rawFilamentLen = Array.isArray(data?.filament) ? data.filament.length : 'n/a';
+      const normalizedWoodLen = gasWood ? gasWood.length : 0;
+      const normalizedFilamentLen = gasFilament ? gasFilament.length : 0;
+      throw new Error(
+        `Invalid price payload: rawWood=${rawWoodLen}, rawFilament=${rawFilamentLen}, normalizedWood=${normalizedWoodLen}, normalizedFilament=${normalizedFilamentLen}`
+      );
     }
 
     WOOD_PRICES = gasWood;
@@ -1374,8 +1380,13 @@ async function loadPricesFromGAS() {
 }
 
 async function bootstrap() {
-  init();
-  await loadPricesFromGAS();
+  try {
+    init();
+  } catch (e) {
+    console.warn('Initial UI setup failed', e);
+  } finally {
+    await loadPricesFromGAS();
+  }
 }
 
 // タブ切替
