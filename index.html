@@ -819,6 +819,18 @@
     text-align: center;
     font-weight: 600;
   }
+  /* ===== GAS送信フィードバック ===== */
+  .sending-overlay {
+    pointer-events: none;
+    opacity: 0.7;
+  }
+  .gas-error-msg {
+    font-size: 0.82rem;
+    color: #e53e3e;
+    font-weight: 600;
+    margin-top: 6px;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -1264,6 +1276,7 @@ const DEFAULT_FILAMENT_PRICES = [
 let WOOD_PRICES = JSON.parse(localStorage.getItem('woodPrices')) || DEFAULT_WOOD_PRICES.map(x => ({...x}));
 let FILAMENT_PRICES = JSON.parse(localStorage.getItem('filamentPrices')) || DEFAULT_FILAMENT_PRICES.map(x => ({...x}));
 
+const GAS_URL = 'YOUR_GAS_URL'; // ← GASデプロイ後にURLを入れてください
 const MARKUP = 1.2;
 
 let items = [];
@@ -1554,31 +1567,68 @@ function closeModal() {
   document.getElementById('modalOverlay').classList.remove('show');
 }
 
-function submitForm() {
+async function submitForm() {
   const isStudent = document.querySelector('input[name="userType"]:checked').value === 'student';
   const id = document.getElementById('studentId').value.trim();
   const name = document.getElementById('studentName').value.trim();
   const total = items.reduce((s, i) => s + i.price, 0);
   const notes = document.getElementById('notes').value;
-
-  const materialText = items.map(i =>
-    `${i.type === 'wood' ? '木材' : 'フィラメント'}: ${i.name}（${i.detail}）¥${i.price.toLocaleString()}`
-  ).join(' / ');
-
-  const FORM_BASE = 'https://docs.google.com/forms/d/e/1FAIpQLSdOukEoMgURIzyHi4ubUQvxITkY4pJvU6fz8NvJ-PkyuHuLwQ/viewform?usp=pp_url';
-  const params = new URLSearchParams({
-    'entry.1504820662': id,
-    'entry.116801571': name,
-    'entry.2131404964': materialText,
-    'entry.1682844209': String(total),
-    'entry.1378369641': notes,
-  });
-
-  window.open(FORM_BASE + '&' + params.toString(), '_blank');
+  const submitSection = document.getElementById('submitCard').querySelector('.submit-section');
+  const submitBtn = document.getElementById('submitBtn');
+  const modalConfirmBtn = document.querySelector('.modal-confirm');
+  const hint = document.getElementById('submitHint');
+  const submitBtnText = submitBtn ? submitBtn.textContent : '';
+  const modalBtnText = modalConfirmBtn ? modalConfirmBtn.textContent : '';
 
   closeModal();
-  document.getElementById('submitCard').querySelector('.submit-section').style.display = 'none';
-  document.getElementById('successCard').classList.add('show');
+  hint.classList.remove('gas-error-msg');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ 送信中…';
+  }
+  if (modalConfirmBtn) {
+    modalConfirmBtn.disabled = true;
+    modalConfirmBtn.textContent = '⏳ 送信中…';
+  }
+  submitSection.classList.add('sending-overlay');
+
+  const payload = {
+    type: 'apply',
+    studentId: isStudent ? id : '',
+    studentName: name,
+    userType: isStudent ? 'student' : 'other',
+    materials: items,
+    totalAmount: total,
+    notes: notes,
+    submittedAt: new Date().toISOString()
+  };
+
+  try {
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'text/plain' }
+    });
+    const result = await response.json();
+    if (!response.ok || result.status !== 'ok') {
+      throw new Error(result.message || '送信失敗');
+    }
+    submitSection.classList.remove('sending-overlay');
+    submitSection.style.display = 'none';
+    document.getElementById('successCard').classList.add('show');
+  } catch (err) {
+    submitSection.classList.remove('sending-overlay');
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = submitBtnText;
+    }
+    if (modalConfirmBtn) {
+      modalConfirmBtn.disabled = false;
+      modalConfirmBtn.textContent = modalBtnText;
+    }
+    hint.textContent = '⚠️ 送信に失敗しました。もう一度お試しください。';
+    hint.style.display = 'block';
+  }
 }
 
 function resetAll() {
@@ -1816,8 +1866,9 @@ function renderPendingList() {
   }
   section.style.display = '';
 
-  list.innerHTML = pending.map(req => {
-    const total = req.materials.reduce((s,m) => s+m.price, 0);
+  list.innerHTML = pending.map((req, index) => {
+    const reqKey = req.id || `idx-${index}`;
+    const total = typeof req.totalAmount === 'number' ? req.totalAmount : req.materials.reduce((s,m) => s+m.price, 0);
     const isApproved = req.status === 'approved';
     return `
       <div class="pending-item">
@@ -1842,17 +1893,27 @@ function renderPendingList() {
           ${isApproved
             ? `<span class="approved-badge">✅ 承認済み・記録されました</span>`
             : `<div class="payment-date-row">
-                 <label for="paymentDate-${req.id}" style="font-size:0.88rem;font-weight:600;color:#4a5568;margin-right:8px;">📅 支払予定日</label>
-                 <input type="date" id="paymentDate-${req.id}" style="border:1px solid #cbd5e0;border-radius:6px;padding:4px 8px;font-size:0.88rem;" oninput="updateApproveBtn('${req.id}')">
+                 <label for="paymentDate-${reqKey}" style="font-size:0.88rem;font-weight:600;color:#4a5568;margin-right:8px;">📅 支払予定日</label>
+                 <input type="date" id="paymentDate-${reqKey}" style="border:1px solid #cbd5e0;border-radius:6px;padding:4px 8px;font-size:0.88rem;" oninput="updateApproveBtn('${reqKey}')">
                  <span style="font-size:0.78rem;color:#718096;margin-left:8px;">（入力後に承認できます）</span>
                </div>
-               <button class="approve-btn" id="approveBtn-${req.id}" onclick="approveRequest('${req.id}')" disabled style="opacity:0.45;cursor:not-allowed;">✅ OK・承認する</button>
+               <button class="approve-btn" id="approveBtn-${reqKey}" disabled style="opacity:0.45;cursor:not-allowed;">✅ OK・承認する</button>
+               <div id="approveStatus-${reqKey}"></div>
                <div class="contact-note">⚠️ 金額が異なる場合は、担当教員にTeams / チャットでご連絡ください</div>`
           }
         </div>
       </div>
     `;
   }).join('');
+
+  pending.forEach((req, index) => {
+    if (req.status === 'approved') return;
+    const reqKey = req.id || `idx-${index}`;
+    const btn = document.getElementById('approveBtn-' + reqKey);
+    if (btn) {
+      btn.onclick = () => approveRequest({ ...req, _key: reqKey, _index: index }, btn);
+    }
+  });
 }
 
 function updateApproveBtn(reqId) {
@@ -1865,36 +1926,73 @@ function updateApproveBtn(reqId) {
   btn.style.cursor = filled ? 'pointer' : 'not-allowed';
 }
 
-function approveRequest(reqId) {
-  const req = pendingRequests.find(r => r.id === reqId);
-  if (!req) return;
-
-  const paymentDateInput = document.getElementById('paymentDate-' + reqId);
+async function approveRequest(data, btnEl) {
+  const reqKey = data._key || data.id || `idx-${data._index || 0}`;
+  const paymentDateInput = document.getElementById('paymentDate-' + reqKey);
   const paymentDate = paymentDateInput ? paymentDateInput.value : '';
+  const statusEl = document.getElementById('approveStatus-' + reqKey);
+  if (!paymentDate) {
+    if (statusEl) {
+      statusEl.className = 'gas-error-msg';
+      statusEl.textContent = '⚠️ 支払予定日を入力してください';
+    }
+    return;
+  }
 
-  const materialText = req.materials.map(m =>
-    `${m.type === 'wood' ? '木材' : 'フィラメント'}: ${m.name}（${m.detail}）¥${m.price.toLocaleString()}`
-  ).join(' / ');
-  const total = req.materials.reduce((s, m) => s + m.price, 0);
+  if (statusEl) {
+    statusEl.className = '';
+    statusEl.textContent = '';
+  }
 
-  const notesParts = [];
-  if (req.notes) notesParts.push(req.notes);
-  if (paymentDate) notesParts.push(`支払予定日：${paymentDate}`);
-  const notesWithDate = notesParts.join(' / ');
+  const totalAmount = typeof data.totalAmount === 'number'
+    ? data.totalAmount
+    : (data.materials || []).reduce((s, m) => s + m.price, 0);
+  const payload = {
+    type: 'approve',
+    studentId: data.studentId || data.targetStudent || '',
+    studentName: data.studentName || data.targetName || '',
+    materials: data.materials || [],
+    totalAmount: totalAmount,
+    payDate: paymentDate,
+    notes: data.notes || '',
+    teacherName: data.teacherName || data.teacher || '',
+    approvedAt: new Date().toISOString()
+  };
 
-  const FORM_BASE = 'https://docs.google.com/forms/d/e/1FAIpQLSdOukEoMgURIzyHi4ubUQvxITkY4pJvU6fz8NvJ-PkyuHuLwQ/viewform?usp=pp_url';
-  const params = new URLSearchParams({
-    'entry.1504820662': req.targetStudent || '',
-    'entry.116801571': req.targetName || '',
-    'entry.2131404964': `【教員請求・${req.teacher}】${materialText}`,
-    'entry.1682844209': String(total),
-    'entry.1378369641': notesWithDate,
-  });
-  window.open(FORM_BASE + '&' + params.toString(), '_blank');
+  const originalText = btnEl.textContent;
+  btnEl.disabled = true;
+  btnEl.textContent = '⏳ 送信中…';
 
-  req.status = 'approved';
-  req._justApproved = true;
-  renderPendingList();
+  try {
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'text/plain' }
+    });
+    const result = await response.json();
+    if (!response.ok || result.status !== 'ok') {
+      throw new Error(result.message || '送信失敗');
+    }
+
+    const req = pendingRequests.find(r => (r.id || '') === (data.id || ''));
+    if (req) {
+      req.status = 'approved';
+      req._justApproved = true;
+    }
+
+    btnEl.style.display = 'none';
+    if (statusEl) {
+      statusEl.className = 'approved-badge';
+      statusEl.textContent = `✅ 承認しました（支払予定日：${paymentDate.replace(/-/g, '/')})`;
+    }
+  } catch (err) {
+    btnEl.disabled = false;
+    btnEl.textContent = originalText;
+    if (statusEl) {
+      statusEl.className = 'gas-error-msg';
+      statusEl.textContent = '⚠️ 送信に失敗しました';
+    }
+  }
 }
 
 loadFromURL();
