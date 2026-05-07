@@ -1324,7 +1324,9 @@ async function loadPriceMasterFromGAS() {
       localStorage.setItem('woodPrices', JSON.stringify(WOOD_PRICES));
       localStorage.setItem('filamentPrices', JSON.stringify(FILAMENT_PRICES));
       return true;
-    } catch (_) {}
+    } catch (e) {
+      console.warn(`単価マスタ取得失敗 (${query})`, e);
+    }
   }
   return false;
 }
@@ -1349,6 +1351,11 @@ function rebuildSelects() {
   rebuildSelectElement('tFilamentType', FILAMENT_PRICES, 'pricePerG');
 }
 
+function refreshPriceMasterUI() {
+  rebuildSelects();
+  renderPriceEditList();
+}
+
 const MARKUP = 1.2;
 
 let items = [];
@@ -1357,12 +1364,10 @@ let filamentCalcPrice = 0;
 
 // 初期化
 function init() {
-  rebuildSelects();
-  renderPriceEditList();
+  refreshPriceMasterUI();
   loadPriceMasterFromGAS().then(loaded => {
     if (!loaded) return;
-    rebuildSelects();
-    renderPriceEditList();
+    refreshPriceMasterUI();
   }).catch(e => console.warn('単価マスタ読み込みエラー', e));
 }
 
