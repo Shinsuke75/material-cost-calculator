@@ -1309,8 +1309,8 @@ async function loadPricesWithFallback() {
     WOOD_PRICES = data.woodPrices;
     FILAMENT_PRICES = data.filamentPrices;
   } catch (e) {
-    WOOD_PRICES = DEFAULT_WOOD_PRICES;
-    FILAMENT_PRICES = DEFAULT_FILAMENT_PRICES;
+    WOOD_PRICES = DEFAULT_WOOD_PRICES.map(x => ({ ...x }));
+    FILAMENT_PRICES = DEFAULT_FILAMENT_PRICES.map(x => ({ ...x }));
     console.warn('価格取得に失敗したためデフォルト価格を使用します', e);
   } finally {
     clearTimeout(timeoutId);
