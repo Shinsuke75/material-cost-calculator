@@ -1309,6 +1309,7 @@ function parsePriceMasterPayload(payload) {
 }
 
 async function loadPriceMasterFromGAS() {
+  // GAS実装差分を吸収するため、想定されるクエリ名を順番に試す
   const queryCandidates = ['type=priceMaster', 'type=price_master', 'action=priceMaster', 'action=price_master', 'master=price'];
   for (const query of queryCandidates) {
     try {
@@ -1318,9 +1319,10 @@ async function loadPriceMasterFromGAS() {
       let payload;
       try {
         payload = await res.json();
-      } catch (_) {
+      } catch (jsonError) {
+        console.warn(`単価マスタ読み込み失敗 (JSON解析: ${query})`, jsonError);
         const text = await res.text();
-        // Google系レスポンスのXSSIプレフィックス ")]}'," を除去
+        // Remove Google-style XSSI prefix ")]}'," from response text
         payload = JSON.parse(text.replace(/^\)\]\}',?\s*/, ''));
       }
 
@@ -1350,7 +1352,7 @@ function rebuildSelectElement(selectId, prices, valueKey) {
     opt.text = item.name;
     sel.appendChild(opt);
   });
-  sel.value = [...sel.options].some(o => o.value === prev) ? prev : '';
+  sel.value = Array.from(sel.options).some(o => o.value === prev) ? prev : '';
 }
 
 function rebuildSelects() {
