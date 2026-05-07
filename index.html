@@ -1274,21 +1274,7 @@ let filamentCalcPrice = 0;
 
 // 初期化
 function init() {
-  const wSel = document.getElementById('woodSpecies');
-  WOOD_PRICES.forEach(w => {
-    const opt = document.createElement('option');
-    opt.value = w.pricePerM3;
-    opt.text = w.name;
-    wSel.appendChild(opt);
-  });
-
-  const fSel = document.getElementById('filamentType');
-  FILAMENT_PRICES.forEach(f => {
-    const opt = document.createElement('option');
-    opt.value = f.pricePerG;
-    opt.text = f.name;
-    fSel.appendChild(opt);
-  });
+  rebuildSelects();
 }
 
 // GASから単価マスタを読み込む
@@ -1996,6 +1982,27 @@ function addFilamentPrice() {
   document.getElementById('newFilamentName').value = '';
   document.getElementById('newFilamentPrice').value = '';
   renderPriceEditList();
+}
+
+// セレクトボックスを最新のWOOD_PRICES/FILAMENT_PRICESで再構築
+function rebuildSelects() {
+  const selIds = [
+    { id: 'woodSpecies',   prices: WOOD_PRICES,    key: 'pricePerM3' },
+    { id: 'tWoodSpecies',  prices: WOOD_PRICES,    key: 'pricePerM3' },
+    { id: 'filamentType',  prices: FILAMENT_PRICES, key: 'pricePerG'  },
+    { id: 'tFilamentType', prices: FILAMENT_PRICES, key: 'pricePerG'  },
+  ];
+  selIds.forEach(({ id, prices, key }) => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    while (sel.options.length > 1) sel.remove(1);
+    prices.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p[key];
+      opt.text = p.name;
+      sel.appendChild(opt);
+    });
+  });
 }
 
 function savePrices() {
