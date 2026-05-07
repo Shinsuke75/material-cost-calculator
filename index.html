@@ -1862,7 +1862,9 @@ function resetTeacher() {
 function renderPendingList() {
   const list = document.getElementById('pendingList');
   const section = document.getElementById('pendingSection');
-  const pending = pendingRequests.filter(r => r.status !== 'approved' || r._justApproved);
+  const pending = pendingRequests
+    .map((r, sourceIndex) => ({ ...r, _sourceIndex: sourceIndex }))
+    .filter(r => r.status !== 'approved' || r._justApproved);
 
   if (pending.length === 0) {
     section.style.display = 'none';
@@ -1870,8 +1872,8 @@ function renderPendingList() {
   }
   section.style.display = '';
 
-  list.innerHTML = pending.map((req, index) => {
-    const reqKey = req.id || `idx-${index}`;
+  list.innerHTML = pending.map((req) => {
+    const reqKey = req.id || `idx-${req._sourceIndex}`;
     const total = typeof req.totalAmount === 'number' ? req.totalAmount : req.materials.reduce((s,m) => s+m.price, 0);
     const isApproved = req.status === 'approved';
     return `
@@ -1910,12 +1912,12 @@ function renderPendingList() {
     `;
   }).join('');
 
-  pending.forEach((req, index) => {
+  pending.forEach((req) => {
     if (req.status === 'approved') return;
-    const reqKey = req.id || `idx-${index}`;
+    const reqKey = req.id || `idx-${req._sourceIndex}`;
     const btn = document.getElementById('approveBtn-' + reqKey);
     if (btn) {
-      btn.onclick = () => approveRequest({ ...req, _key: reqKey, _index: index }, btn);
+      btn.onclick = () => approveRequest({ ...req, _key: reqKey }, btn);
     }
   });
 }
@@ -1931,7 +1933,7 @@ function updateApproveBtn(reqId) {
 }
 
 async function approveRequest(data, btnEl) {
-  const reqKey = data._key || data.id || `idx-${data._index || 0}`;
+  const reqKey = data._key || data.id || `idx-${data._sourceIndex || 0}`;
   const paymentDateInput = document.getElementById('paymentDate-' + reqKey);
   const paymentDate = paymentDateInput ? paymentDateInput.value : '';
   const statusEl = document.getElementById('approveStatus-' + reqKey);
@@ -1978,7 +1980,9 @@ async function approveRequest(data, btnEl) {
       throw new Error(result.message || '送信失敗');
     }
 
-    const req = pendingRequests.find(r => (r.id || '') === (data.id || ''));
+    const req = typeof data._sourceIndex === 'number'
+      ? pendingRequests[data._sourceIndex]
+      : pendingRequests.find(r => (r.id || '') === (data.id || ''));
     if (req) {
       req.status = 'approved';
       req._justApproved = true;
