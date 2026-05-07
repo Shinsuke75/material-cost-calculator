@@ -940,11 +940,15 @@
       </button>
     </div>
     <div id="tUrlArea" style="display:none; margin-top:14px;">
-      <div style="font-size:0.85rem; color:#2b6cb0; font-weight:700; margin-bottom:8px;">📋 このURLをTeamsやメールで学生に送ってください</div>
+      <div style="font-size:0.85rem; color:#2b6cb0; font-weight:700; margin-bottom:8px;">📋 このURLを学生に送ってください</div>
       <div style="display:flex; gap:8px; align-items:center;">
         <input type="text" id="tGeneratedUrl" readonly style="flex:1; font-size:0.75rem; background:#ebf8ff; border:1.5px solid #90cdf4; border-radius:8px; padding:8px 10px; color:#2c5282; min-width:0;">
         <button onclick="copyRequestURL()" style="background:#3182ce; color:white; border:none; border-radius:8px; padding:10px 14px; font-weight:700; cursor:pointer; font-size:0.85rem; white-space:nowrap; flex-shrink:0;">コピー</button>
       </div>
+      <button onclick="openTeamsWithURL()" style="margin-top:10px; width:100%; background:#5058c8; color:white; border:none; border-radius:10px; padding:13px; font-weight:700; cursor:pointer; font-size:0.95rem; display:flex; align-items:center; justify-content:center; gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M19.5 3h-2V1.5A1.5 1.5 0 0 0 16 0h-8a1.5 1.5 0 0 0-1.5 1.5V3h-2A1.5 1.5 0 0 0 3 4.5v15A1.5 1.5 0 0 0 4.5 21h15a1.5 1.5 0 0 0 1.5-1.5v-15A1.5 1.5 0 0 0 19.5 3zM8 1.5h8V3H8V1.5zM12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>
+        Teamsで送る
+      </button>
       <div id="tCopyMsg" style="display:none; font-size:0.82rem; color:#38a169; margin-top:6px; font-weight:700;">✅ コピーしました！Teamsに貼り付けて送ってください</div>
     </div>
     <div class="teacher-success" id="teacherSuccess">
@@ -1804,6 +1808,14 @@ function copyRequestURL() {
     msg.style.display = 'block';
     setTimeout(() => msg.style.display = 'none', 3000);
   });
+}
+
+function openTeamsWithURL() {
+  const url = document.getElementById('tGeneratedUrl').value;
+  const studentName = document.getElementById('tStudentName').value.trim() || '学生';
+  const message = encodeURIComponent('【材料費確認依頼】\n' + studentName + 'さん、以下のURLを開いて材料費の確認をお願いします。\n' + url);
+  // msteams:// でTeamsアプリを起動（新規チャット作成画面）
+  window.open('msteams://teams.microsoft.com/l/chat/0/0?message=' + message, '_blank');
 }
 
 function resetTeacher() {
