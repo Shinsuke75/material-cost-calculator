@@ -1262,6 +1262,8 @@ const DEFAULT_FILAMENT_PRICES = [
   { name: '木質PLA',            pricePerG: 7.0  },
 ];
 
+const PRICE_FETCH_TIMEOUT_MS = 5000;
+
 // localStorageから読み込み（なければデフォルト）
 let WOOD_PRICES = JSON.parse(localStorage.getItem('woodPrices')) || DEFAULT_WOOD_PRICES.map(x => ({...x}));
 let FILAMENT_PRICES = JSON.parse(localStorage.getItem('filamentPrices')) || DEFAULT_FILAMENT_PRICES.map(x => ({...x}));
@@ -1289,6 +1291,30 @@ function init() {
     opt.text = f.name;
     fSel.appendChild(opt);
   });
+}
+
+async function loadPricesWithFallback() {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PRICE_FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${GAS_URL}?type=prices`, {
+      method: 'GET',
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!Array.isArray(data?.woodPrices) || !Array.isArray(data?.filamentPrices)) {
+      throw new Error('価格データ形式が不正です');
+    }
+    WOOD_PRICES = data.woodPrices;
+    FILAMENT_PRICES = data.filamentPrices;
+  } catch (e) {
+    WOOD_PRICES = DEFAULT_WOOD_PRICES;
+    FILAMENT_PRICES = DEFAULT_FILAMENT_PRICES;
+    console.warn('価格取得に失敗したためデフォルト価格を使用します', e);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 // タブ切替
@@ -1597,7 +1623,7 @@ function resetAll() {
   calcFilament();
 }
 
-init();
+loadPricesWithFallback().finally(() => init());
 
 // URLパラメータで教員モード判定（PIN保護）
 (function() {
