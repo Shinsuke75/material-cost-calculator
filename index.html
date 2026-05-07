@@ -1570,7 +1570,7 @@ function submitForm() {
   // GASへ申請記録を送信
   fetch(GAS_URL, {
     method: 'POST',
-    mode: 'no-cors',
+    mode: 'cors',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       type: 'apply',
@@ -1887,7 +1887,7 @@ function approveRequest(reqId) {
   // GASへ承認記録を送信
   fetch(GAS_URL, {
     method: 'POST',
-    mode: 'no-cors',
+    mode: 'cors',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       type: 'approve',
