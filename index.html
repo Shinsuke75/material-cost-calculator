@@ -1295,19 +1295,27 @@ function init() {
 
 async function loadPricesWithFallback() {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), PRICE_FETCH_TIMEOUT_MS);
+  let timeoutId = setTimeout(() => controller.abort(), PRICE_FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(`${GAS_URL}?type=prices`, {
       method: 'GET',
       signal: controller.signal,
     });
+    clearTimeout(timeoutId);
+    timeoutId = null;
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    if (!Array.isArray(data?.woodPrices) || !Array.isArray(data?.filamentPrices)) {
+    const isValidWood = Array.isArray(data?.woodPrices) && data.woodPrices.every(w =>
+      w && typeof w.name === 'string' && Number.isFinite(Number(w.pricePerM3))
+    );
+    const isValidFilament = Array.isArray(data?.filamentPrices) && data.filamentPrices.every(f =>
+      f && typeof f.name === 'string' && Number.isFinite(Number(f.pricePerG))
+    );
+    if (!isValidWood || !isValidFilament) {
       throw new Error('価格データ形式が不正です');
     }
-    WOOD_PRICES = data.woodPrices;
-    FILAMENT_PRICES = data.filamentPrices;
+    WOOD_PRICES = data.woodPrices.map(w => ({ name: w.name, pricePerM3: Number(w.pricePerM3) }));
+    FILAMENT_PRICES = data.filamentPrices.map(f => ({ name: f.name, pricePerG: Number(f.pricePerG) }));
     localStorage.setItem('woodPrices', JSON.stringify(WOOD_PRICES));
     localStorage.setItem('filamentPrices', JSON.stringify(FILAMENT_PRICES));
   } catch (e) {
@@ -1317,7 +1325,7 @@ async function loadPricesWithFallback() {
     localStorage.removeItem('filamentPrices');
     console.warn('価格取得に失敗したためデフォルト価格を使用します', e);
   } finally {
-    clearTimeout(timeoutId);
+    if (timeoutId) clearTimeout(timeoutId);
   }
 }
 
