@@ -1199,17 +1199,14 @@
         <textarea id="notes" rows="3" placeholder="例：授業の課題制作、椅子の脚材として使用"></textarea>
       </div>
       <button class="submit-btn" id="submitBtn" onclick="showConfirm()">
-        📋 内容を確認して申請フォームを開く
+        📋 内容を確認して申請する
       </button>
       <div id="submitHint" class="submit-hint">⚠️ 学籍番号・氏名を入力してください</div>
-      <div style="margin-top:10px; font-size:0.82rem; color:#e53e3e; background:#fff5f5; border:1px solid #fed7d7; border-radius:8px; padding:8px 12px;">
-        ⚠️ 申請フォームは<strong>学校のGoogleアカウント（学籍番号@stumail.daido-it.ac.jp）</strong>でログインしている必要があります。個人アカウントではエラーになります。
-      </div>
     </div>
     <div class="success-card" id="successCard">
-      <div class="success-icon">📋</div>
-      <h3>申請フォームを開きました！</h3>
-      <p>別タブでフォームが開きました。<br>内容を確認して<strong>「送信」</strong>を押してください。</p>
+      <div class="success-icon">✅</div>
+      <h3>申請が送信されました！</h3>
+      <p>申請内容を記録しました。<br>担当教員に確認してもらってください。</p>
       <button class="reset-btn" onclick="resetAll()">新しい申請を始める</button>
     </div>
   </div>
@@ -1223,12 +1220,17 @@
     <div class="modal-content" id="modalContent"></div>
     <div class="modal-btns">
       <button class="modal-cancel" onclick="closeModal()">戻って修正する</button>
-      <button class="modal-confirm" onclick="submitForm()">📋 申請フォームを開く</button>
+      <button class="modal-confirm" onclick="submitForm()">📋 この内容で申請する</button>
     </div>
   </div>
 </div>
 
 <script>
+// =====================
+// GAS Web App URL（スプレッドシートへの記録用）
+// =====================
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxI21yai8-EBNX03IdqYMg9EOnv1DCtZ8tqXNhHwuRp2jzAeXccUJ3REkYGk0cihY1w/exec';
+
 // =====================
 // 材料価格マスタ（技術員が管理）
 // 単位：円/m³（木材）、円/g（フィラメント）
@@ -1561,24 +1563,24 @@ function submitForm() {
   const total = items.reduce((s, i) => s + i.price, 0);
   const notes = document.getElementById('notes').value;
 
-  const materialText = items.map(i =>
-    `${i.type === 'wood' ? '木材' : 'フィラメント'}: ${i.name}（${i.detail}）¥${i.price.toLocaleString()}`
-  ).join(' / ');
-
-  const FORM_BASE = 'https://docs.google.com/forms/d/e/1FAIpQLSdOukEoMgURIzyHi4ubUQvxITkY4pJvU6fz8NvJ-PkyuHuLwQ/viewform?usp=pp_url';
-  const params = new URLSearchParams({
-    'entry.1504820662': id,
-    'entry.116801571': name,
-    'entry.2131404964': materialText,
-    'entry.1682844209': String(total),
-    'entry.1378369641': notes,
-  });
-
-  window.open(FORM_BASE + '&' + params.toString(), '_blank');
-
   closeModal();
   document.getElementById('submitCard').querySelector('.submit-section').style.display = 'none';
   document.getElementById('successCard').classList.add('show');
+
+  // GASへ申請記録を送信
+  fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'apply',
+      studentId: id,
+      studentName: name,
+      materials: items.map(i => ({ type: i.type, name: i.name, detail: i.detail, price: i.price })),
+      totalAmount: total,
+      notes: notes,
+    }),
+  }).catch(e => console.warn('GAS送信エラー', e));
 }
 
 function resetAll() {
@@ -1882,15 +1884,22 @@ function approveRequest(reqId) {
   if (paymentDate) notesParts.push(`支払予定日：${paymentDate}`);
   const notesWithDate = notesParts.join(' / ');
 
-  const FORM_BASE = 'https://docs.google.com/forms/d/e/1FAIpQLSdOukEoMgURIzyHi4ubUQvxITkY4pJvU6fz8NvJ-PkyuHuLwQ/viewform?usp=pp_url';
-  const params = new URLSearchParams({
-    'entry.1504820662': req.targetStudent || '',
-    'entry.116801571': req.targetName || '',
-    'entry.2131404964': `【教員請求・${req.teacher}】${materialText}`,
-    'entry.1682844209': String(total),
-    'entry.1378369641': notesWithDate,
-  });
-  window.open(FORM_BASE + '&' + params.toString(), '_blank');
+  // GASへ承認記録を送信
+  fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'approve',
+      studentId: req.targetStudent || '',
+      studentName: req.targetName || '',
+      materials: req.materials,
+      totalAmount: total,
+      payDate: paymentDate,
+      notes: notesWithDate,
+      teacherName: req.teacher || '',
+    }),
+  }).catch(e => console.warn('GAS送信エラー', e));
 
   req.status = 'approved';
   req._justApproved = true;
