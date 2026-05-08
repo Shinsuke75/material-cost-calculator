@@ -1532,7 +1532,7 @@ function renderList() {
     `).join('');
   }
 
-  document.getElementById('totalAmount').innerHTML = `${total.toLocaleString()} <span>円</span><span style="font-size:0.7rem;opacity:0.6;margin-left:6px;">（10円単位）</span>`;
+  document.getElementById('totalAmount').innerHTML = `${total.toLocaleString()} <span>円</span><div style="font-size:0.72rem;opacity:0.65;margin-top:4px;font-weight:400;">※端数は10円単位で四捨五入しています</div>`;
   updateSubmitBtn();
 }
 
@@ -1875,7 +1875,7 @@ function renderTeacherList() {
       </div>
     `).join('');
   }
-  document.getElementById('tTotalAmount').innerHTML = `${total.toLocaleString()} <span>円</span><span style="font-size:0.7rem;opacity:0.6;margin-left:6px;">（10円単位）</span>`;
+  document.getElementById('tTotalAmount').innerHTML = `${total.toLocaleString()} <span>円</span><div style="font-size:0.72rem;opacity:0.65;margin-top:4px;font-weight:400;">※端数は10円単位で四捨五入しています</div>`;
   updateTeacherSendBtn();
 }
 
