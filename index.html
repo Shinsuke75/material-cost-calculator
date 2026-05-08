@@ -861,15 +861,15 @@
 
     <!-- 材料入力（教員用） -->
     <div class="tab-buttons">
-      <button class="tab-btn active" id="tWoodBtn" onclick="switchTeacherTab('wood')">🪵 木材</button>
-      <button class="tab-btn" id="tFilamentBtn" onclick="switchTeacherTab('filament')">🔵 フィラメント</button>
+      <button class="tab-btn active" id="tWoodBtn" onclick="switchTeacherTab('wood')">📐 体積計算</button>
+      <button class="tab-btn" id="tFilamentBtn" onclick="switchTeacherTab('filament')">⚖️ 重さ計算</button>
       <button class="tab-btn" id="tOtherBtn" onclick="switchTeacherTab('other')">📦 その他</button>
     </div>
 
     <div class="tab-panel active" id="ttab-wood">
       <div class="input-row">
         <div class="form-group">
-          <label>樹種</label>
+          <label>材料</label>
           <select id="tWoodSpecies" onchange="calcTeacherWood()">
             <option value="">選択してください</option>
           </select>
@@ -891,7 +891,7 @@
         </div>
       </div>
       <div class="price-preview">
-        <div class="detail" id="tWoodDetail">樹種・寸法を入力すると金額が表示されます</div>
+        <div class="detail" id="tWoodDetail">材料・寸法を入力すると金額が表示されます</div>
         <div class="amount zero" id="tWoodAmount">— <span>円</span></div>
       </div>
       <button class="add-btn" id="tAddWoodBtn" onclick="addTeacherWood()" disabled style="margin-top:12px;">＋ リストに追加</button>
@@ -900,7 +900,7 @@
     <div class="tab-panel" id="ttab-filament">
       <div class="input-row">
         <div class="form-group">
-          <label>フィラメント種類</label>
+          <label>材料種類</label>
           <select id="tFilamentType" onchange="calcTeacherFilament()">
             <option value="">選択してください</option>
           </select>
@@ -921,7 +921,7 @@
       <div class="input-row">
         <div class="form-group" style="flex:2;">
           <label>品名</label>
-          <input type="text" id="tOtherName" placeholder="例：スタイロフォーム、アクリル板" oninput="calcTeacherOther()">
+          <input type="text" id="tOtherName" placeholder="例：表にない材料、消耗品など" oninput="calcTeacherOther()">
         </div>
         <div class="form-group" style="max-width:80px;">
           <label>数量</label>
@@ -988,8 +988,8 @@
     <div class="teacher-notice">📌 ここで変更した単価はこのブラウザに保存され、次回以降も反映されます。</div>
 
     <div class="tab-buttons">
-      <button class="tab-btn active" id="peWoodBtn" onclick="switchPriceTab('wood')">🪵 木材</button>
-      <button class="tab-btn" id="peFilamentBtn" onclick="switchPriceTab('filament')">🔵 フィラメント</button>
+      <button class="tab-btn active" id="peWoodBtn" onclick="switchPriceTab('wood')">📐 体積計算</button>
+      <button class="tab-btn" id="peFilamentBtn" onclick="switchPriceTab('filament')">⚖️ 重さ計算</button>
     </div>
 
     <!-- 木材編集 -->
@@ -1129,8 +1129,8 @@
     <div class="card-title">➕ 材料を追加</div>
 
     <div class="tab-buttons">
-      <button class="tab-btn active" data-tab="wood" onclick="switchTab('wood')">🪵 木材</button>
-      <button class="tab-btn" data-tab="filament" onclick="switchTab('filament')">🔵 フィラメント</button>
+      <button class="tab-btn active" data-tab="wood" onclick="switchTab('wood')">📐 体積計算</button>
+      <button class="tab-btn" data-tab="filament" onclick="switchTab('filament')">⚖️ 重さ計算</button>
       <button class="tab-btn" data-tab="other" onclick="switchTab('other')">📦 その他</button>
     </div>
 
@@ -1138,7 +1138,7 @@
     <div class="tab-panel active" id="tab-wood">
       <div class="input-row">
         <div class="form-group">
-          <label>樹種</label>
+          <label>材料</label>
           <select id="woodSpecies" onchange="calcWood()">
             <option value="">選択してください</option>
           </select>
@@ -1161,16 +1161,16 @@
       </div>
 
       <div class="price-preview" id="woodPreview">
-        <div class="detail" id="woodCalcDetail">樹種・寸法を入力すると金額が表示されます</div>
+        <div class="detail" id="woodCalcDetail">材料・寸法を入力すると金額が表示されます</div>
         <div class="amount zero" id="woodAmount">— <span>円</span></div>
       </div>
 
       <!-- 比較機能 -->
       <div class="compare-section">
-        <button class="compare-toggle" onclick="toggleCompare()">📊 他の樹種と金額を比べる</button>
+        <button class="compare-toggle" onclick="toggleCompare()">📊 他の材料と金額を比べる</button>
         <div class="compare-area" id="compareArea">
-          <h4>📊 樹種比較（同じ寸法で）</h4>
-          <p style="font-size:0.8rem;color:#975a16;margin-bottom:10px;">上で入力した寸法・本数をもとに、各樹種の金額を自動計算します</p>
+          <h4>📊 材料比較（同じ寸法で）</h4>
+          <p style="font-size:0.8rem;color:#975a16;margin-bottom:10px;">上で入力した寸法・本数をもとに、各材料の金額を自動計算します</p>
           <div class="compare-result" id="compareResult"></div>
         </div>
       </div>
@@ -1184,7 +1184,7 @@
     <div class="tab-panel" id="tab-filament">
       <div class="input-row">
         <div class="form-group">
-          <label>フィラメント種類</label>
+          <label>材料種類</label>
           <select id="filamentType" onchange="calcFilament()">
             <option value="">選択してください</option>
           </select>
@@ -1210,7 +1210,7 @@
       <div class="input-row">
         <div class="form-group" style="flex:2;">
           <label>品名</label>
-          <input type="text" id="otherName" placeholder="例：スタイロフォーム、アクリル板" oninput="calcOther()">
+          <input type="text" id="otherName" placeholder="例：表にない材料、消耗品など" oninput="calcOther()">
         </div>
         <div class="form-group" style="max-width:90px;">
           <label>数量</label>
@@ -1390,7 +1390,7 @@ function calcWood() {
   if (!pricePerM3 || !L || !W || !H) {
     amountEl.className = 'amount zero';
     amountEl.innerHTML = '— <span>円</span>';
-    detailEl.textContent = '樹種・寸法を入力すると金額が表示されます';
+    detailEl.textContent = '材料・寸法を入力すると金額が表示されます';
     woodCalcPrice = 0;
     addBtn.disabled = true;
     return;
@@ -1797,7 +1797,7 @@ function calcTeacherWood() {
   if (!pricePerM3 || !L || !W || !H) {
     document.getElementById('tWoodAmount').className = 'amount zero';
     document.getElementById('tWoodAmount').innerHTML = '— <span>円</span>';
-    document.getElementById('tWoodDetail').textContent = '樹種・寸法を入力すると金額が表示されます';
+    document.getElementById('tWoodDetail').textContent = '材料・寸法を入力すると金額が表示されます';
     tWoodPrice = 0;
     document.getElementById('tAddWoodBtn').disabled = true;
     return;
