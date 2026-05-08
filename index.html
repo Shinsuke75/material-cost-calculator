@@ -2046,10 +2046,7 @@ function approveRequest(reqId) {
   ).join(' / ');
   const total = roundTotal(req.materials.reduce((s, m) => s + m.price, 0));
 
-  const notesParts = [];
-  if (req.notes) notesParts.push(req.notes);
-  if (paymentDate) notesParts.push(`支払予定日：${paymentDate}`);
-  const notesWithDate = notesParts.join(' / ');
+  const notesWithDate = req.notes || '';
 
   // GASへ承認記録を送信
   fetch(GAS_URL, {
