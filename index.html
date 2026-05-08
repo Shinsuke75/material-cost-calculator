@@ -1511,9 +1511,11 @@ function addFilamentItem() {
 }
 
 // リスト描画
+function roundTotal(n) { return Math.round(n / 10) * 10; }
+
 function renderList() {
   const list = document.getElementById('itemsList');
-  const total = items.reduce((s, i) => s + i.price, 0);
+  const total = roundTotal(items.reduce((s, i) => s + i.price, 0));
 
   if (items.length === 0) {
     list.innerHTML = '<div class="empty-msg">材料をまだ追加していません</div>';
@@ -1530,7 +1532,7 @@ function renderList() {
     `).join('');
   }
 
-  document.getElementById('totalAmount').innerHTML = `${total.toLocaleString()} <span>円</span>`;
+  document.getElementById('totalAmount').innerHTML = `${total.toLocaleString()} <span>円</span><span style="font-size:0.7rem;opacity:0.6;margin-left:6px;">（10円単位）</span>`;
   updateSubmitBtn();
 }
 
@@ -1613,7 +1615,7 @@ function showConfirm() {
   const isStudent = document.querySelector('input[name="userType"]:checked').value === 'student';
   const id = document.getElementById('studentId').value.trim();
   const name = document.getElementById('studentName').value.trim();
-  const total = items.reduce((s, i) => s + i.price, 0);
+  const total = roundTotal(items.reduce((s, i) => s + i.price, 0));
   const notes = document.getElementById('notes').value;
 
   // ── バリデーション ──
@@ -1670,7 +1672,7 @@ function submitForm() {
   const isStudent = document.querySelector('input[name="userType"]:checked').value === 'student';
   const id = document.getElementById('studentId').value.trim();
   const name = document.getElementById('studentName').value.trim();
-  const total = items.reduce((s, i) => s + i.price, 0);
+  const total = roundTotal(items.reduce((s, i) => s + i.price, 0));
   const notes = document.getElementById('notes').value;
 
   closeModal();
@@ -1858,7 +1860,7 @@ function addTeacherFilament() {
 
 function renderTeacherList() {
   const list = document.getElementById('tItemsList');
-  const total = tItems.reduce((s,i) => s+i.price, 0);
+  const total = roundTotal(tItems.reduce((s,i) => s+i.price, 0));
   if (tItems.length === 0) {
     list.innerHTML = '<div class="empty-msg">材料をまだ追加していません</div>';
   } else {
@@ -1873,7 +1875,7 @@ function renderTeacherList() {
       </div>
     `).join('');
   }
-  document.getElementById('tTotalAmount').innerHTML = `${total.toLocaleString()} <span>円</span>`;
+  document.getElementById('tTotalAmount').innerHTML = `${total.toLocaleString()} <span>円</span><span style="font-size:0.7rem;opacity:0.6;margin-left:6px;">（10円単位）</span>`;
   updateTeacherSendBtn();
 }
 
@@ -1984,7 +1986,7 @@ function renderPendingList() {
   section.style.display = '';
 
   list.innerHTML = pending.map(req => {
-    const total = req.materials.reduce((s,m) => s+m.price, 0);
+    const total = roundTotal(req.materials.reduce((s,m) => s+m.price, 0));
     const isApproved = req.status === 'approved';
     return `
       <div class="pending-item">
@@ -2042,7 +2044,7 @@ function approveRequest(reqId) {
   const materialText = req.materials.map(m =>
     `${m.type === 'wood' ? '木材' : m.type === 'filament' ? 'フィラメント' : 'その他'}: ${m.name}（${m.detail}）¥${m.price.toLocaleString()}`
   ).join(' / ');
-  const total = req.materials.reduce((s, m) => s + m.price, 0);
+  const total = roundTotal(req.materials.reduce((s, m) => s + m.price, 0));
 
   const notesParts = [];
   if (req.notes) notesParts.push(req.notes);
