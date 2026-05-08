@@ -863,6 +863,7 @@
     <div class="tab-buttons">
       <button class="tab-btn active" id="tWoodBtn" onclick="switchTeacherTab('wood')">🪵 木材</button>
       <button class="tab-btn" id="tFilamentBtn" onclick="switchTeacherTab('filament')">🔵 フィラメント</button>
+      <button class="tab-btn" id="tOtherBtn" onclick="switchTeacherTab('other')">📦 その他</button>
     </div>
 
     <div class="tab-panel active" id="ttab-wood">
@@ -914,6 +915,28 @@
         <div class="amount zero" id="tFilamentAmount">— <span>円</span></div>
       </div>
       <button class="add-btn" id="tAddFilamentBtn" onclick="addTeacherFilament()" disabled style="margin-top:12px;">＋ リストに追加</button>
+    </div>
+
+    <div class="tab-panel" id="ttab-other">
+      <div class="input-row">
+        <div class="form-group" style="flex:2;">
+          <label>品名</label>
+          <input type="text" id="tOtherName" placeholder="例：スタイロフォーム、アクリル板" oninput="calcTeacherOther()">
+        </div>
+        <div class="form-group" style="max-width:80px;">
+          <label>数量</label>
+          <input type="number" id="tOtherQty" value="1" min="1" oninput="calcTeacherOther()">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>単価（円）</label>
+        <input type="number" id="tOtherPrice" placeholder="例：500" min="0" oninput="calcTeacherOther()">
+      </div>
+      <div class="price-preview">
+        <div class="detail" id="tOtherDetail">品名と単価を入力すると金額が表示されます</div>
+        <div class="amount zero" id="tOtherAmount">— <span>円</span></div>
+      </div>
+      <button class="add-btn" id="tAddOtherBtn" onclick="addTeacherOther()" disabled style="margin-top:12px;">＋ リストに追加</button>
     </div>
 
     <!-- 教員リスト -->
@@ -1007,9 +1030,14 @@
         </div>
 
         <div class="pc-step-label">③ 樹種名を入力して追加</div>
-        <div class="price-add-row" style="margin-top:0;">
-          <input type="text" id="newWoodName" placeholder="樹種名（例：ケンパス）" style="flex:2;">
-          <input type="number" id="newWoodPrice" placeholder="円/m³" min="0" style="flex:1;">
+        <div class="price-add-row" style="margin-top:0;flex-wrap:wrap;">
+          <select id="newWoodCategory" style="flex:none;padding:10px 8px;border:1.5px solid #cbd5e0;border-radius:8px;font-size:0.85rem;background:white;">
+            <option value="無垢材">無垢材</option>
+            <option value="合板">合板</option>
+            <option value="その他材料">その他材料</option>
+          </select>
+          <input type="text" id="newWoodName" placeholder="品名（例：スタイロフォーム）" style="flex:2;min-width:120px;">
+          <input type="number" id="newWoodPrice" placeholder="円/m³" min="0" style="flex:1;min-width:80px;">
           <button class="add-btn" onclick="addWoodPrice()" style="padding:10px 16px;">＋ 追加</button>
         </div>
         <div class="pc-add-note">※ ②の「この単価を新規追加に反映」を押すと単価が自動入力されます</div>
@@ -1101,8 +1129,9 @@
     <div class="card-title">➕ 材料を追加</div>
 
     <div class="tab-buttons">
-      <button class="tab-btn active" onclick="switchTab('wood')">🪵 木材</button>
-      <button class="tab-btn" onclick="switchTab('filament')">🔵 フィラメント</button>
+      <button class="tab-btn active" data-tab="wood" onclick="switchTab('wood')">🪵 木材</button>
+      <button class="tab-btn" data-tab="filament" onclick="switchTab('filament')">🔵 フィラメント</button>
+      <button class="tab-btn" data-tab="other" onclick="switchTab('other')">📦 その他</button>
     </div>
 
     <!-- 木材タブ -->
@@ -1175,6 +1204,31 @@
         <button class="add-btn" id="addFilamentBtn" onclick="addFilamentItem()" disabled>＋ リストに追加</button>
       </div>
     </div>
+
+    <!-- その他タブ -->
+    <div class="tab-panel" id="tab-other">
+      <div class="input-row">
+        <div class="form-group" style="flex:2;">
+          <label>品名</label>
+          <input type="text" id="otherName" placeholder="例：スタイロフォーム、アクリル板" oninput="calcOther()">
+        </div>
+        <div class="form-group" style="max-width:90px;">
+          <label>数量</label>
+          <input type="number" id="otherQty" value="1" min="1" oninput="calcOther()">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label>単価（円）</label>
+        <input type="number" id="otherPrice" placeholder="例：500" min="0" oninput="calcOther()">
+      </div>
+      <div class="price-preview" id="otherPreview">
+        <div class="detail" id="otherCalcDetail">品名と単価を入力すると金額が表示されます</div>
+        <div class="amount zero" id="otherAmount">— <span>円</span></div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="add-btn" id="addOtherBtn" onclick="addOtherItem()" disabled>＋ リストに追加</button>
+      </div>
+    </div>
   </div>
 
   </div><!-- /student-mode inner -->
@@ -1242,19 +1296,19 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbxI21yai8-EBNX03IdqYMg9
 // デフォルト価格（初期値・リセット用）
 // =====================
 const DEFAULT_WOOD_PRICES = [
-  { name: 'スギ（杉）',       pricePerM3: 60000  },
-  { name: 'ヒノキ（檜）',     pricePerM3: 85000  },
-  { name: 'マツ（松）',       pricePerM3: 55000  },
-  { name: 'ナラ（楢）',       pricePerM3: 130000 },
-  { name: 'クリ（栗）',       pricePerM3: 120000 },
-  { name: 'ケヤキ（欅）',     pricePerM3: 180000 },
-  { name: 'タモ',             pricePerM3: 110000 },
-  { name: 'ウォルナット',     pricePerM3: 220000 },
-  { name: 'チェリー',         pricePerM3: 150000 },
-  { name: 'メープル',         pricePerM3: 140000 },
-  { name: 'パイン（輸入）',   pricePerM3: 40000  },
-  { name: 'ラワン合板',       pricePerM3: 35000  },
-  { name: 'シナ合板',         pricePerM3: 50000  },
+  { name: 'スギ（杉）',       pricePerM3: 60000,  category: '無垢材' },
+  { name: 'ヒノキ（檜）',     pricePerM3: 85000,  category: '無垢材' },
+  { name: 'マツ（松）',       pricePerM3: 55000,  category: '無垢材' },
+  { name: 'ナラ（楢）',       pricePerM3: 130000, category: '無垢材' },
+  { name: 'クリ（栗）',       pricePerM3: 120000, category: '無垢材' },
+  { name: 'ケヤキ（欅）',     pricePerM3: 180000, category: '無垢材' },
+  { name: 'タモ',             pricePerM3: 110000, category: '無垢材' },
+  { name: 'ウォルナット',     pricePerM3: 220000, category: '無垢材' },
+  { name: 'チェリー',         pricePerM3: 150000, category: '無垢材' },
+  { name: 'メープル',         pricePerM3: 140000, category: '無垢材' },
+  { name: 'パイン（輸入）',   pricePerM3: 40000,  category: '無垢材' },
+  { name: 'ラワン合板',       pricePerM3: 35000,  category: '合板' },
+  { name: 'シナ合板',         pricePerM3: 50000,  category: '合板' },
 ];
 const DEFAULT_FILAMENT_PRICES = [
   { name: 'PLA（白／黒）',      pricePerG: 3.0  },
@@ -1308,11 +1362,15 @@ async function loadPricesFromGAS() {
 
 // タブ切替
 function switchTab(tab) {
-  document.querySelectorAll('.tab-btn').forEach((b, i) => {
-    b.classList.toggle('active', (i === 0 && tab === 'wood') || (i === 1 && tab === 'filament'));
+  document.querySelectorAll('[data-tab]').forEach(b => {
+    if (b.tagName === 'BUTTON' && b.closest('#studentMode')) {
+      b.classList.toggle('active', b.dataset.tab === tab);
+    }
   });
-  document.getElementById('tab-wood').classList.toggle('active', tab === 'wood');
-  document.getElementById('tab-filament').classList.toggle('active', tab === 'filament');
+  ['wood', 'filament', 'other'].forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el) el.classList.toggle('active', t === tab);
+  });
 }
 
 // 木材計算
@@ -1401,6 +1459,43 @@ function addWoodItem() {
   calcWood();
 }
 
+// その他計算
+let otherCalcPrice = 0;
+function calcOther() {
+  const name = document.getElementById('otherName').value.trim();
+  const price = parseFloat(document.getElementById('otherPrice').value) || 0;
+  const qty = parseInt(document.getElementById('otherQty').value) || 1;
+  const amountEl = document.getElementById('otherAmount');
+  const detailEl = document.getElementById('otherCalcDetail');
+  const addBtn = document.getElementById('addOtherBtn');
+  if (!name || !price) {
+    amountEl.className = 'amount zero';
+    amountEl.innerHTML = '— <span>円</span>';
+    detailEl.textContent = '品名と単価を入力すると金額が表示されます';
+    otherCalcPrice = 0;
+    addBtn.disabled = true;
+    return;
+  }
+  otherCalcPrice = Math.ceil(price * qty);
+  amountEl.className = 'amount';
+  amountEl.innerHTML = `${otherCalcPrice.toLocaleString()} <span>円</span>`;
+  detailEl.innerHTML = `${name} × ${qty}点　単価：${price.toLocaleString()}円`;
+  addBtn.disabled = false;
+}
+
+// その他リストに追加
+function addOtherItem() {
+  const name = document.getElementById('otherName').value.trim();
+  const price = parseFloat(document.getElementById('otherPrice').value) || 0;
+  const qty = parseInt(document.getElementById('otherQty').value) || 1;
+  items.push({ type: 'other', name, detail: `${qty}点 × ¥${price.toLocaleString()}`, price: otherCalcPrice });
+  renderList();
+  document.getElementById('otherName').value = '';
+  document.getElementById('otherPrice').value = '';
+  document.getElementById('otherQty').value = 1;
+  calcOther();
+}
+
 // フィラメントリストに追加
 function addFilamentItem() {
   const fType = document.getElementById('filamentType');
@@ -1426,7 +1521,7 @@ function renderList() {
     list.innerHTML = items.map((item, idx) => `
       <div class="item-row">
         <div class="item-info">
-          <div class="item-name">${item.type === 'wood' ? '🪵' : '🔵'} ${item.name}</div>
+          <div class="item-name">${item.type === 'wood' ? '🪵' : item.type === 'filament' ? '🔵' : '📦'} ${item.name}</div>
           <div class="item-detail">${item.detail}</div>
         </div>
         <div class="item-price">${item.price.toLocaleString()} 円</div>
@@ -1557,7 +1652,7 @@ function showConfirm() {
     <div style="margin:12px 0 8px; font-size:0.85rem; font-weight:700; color:#718096;">材料リスト</div>
     ${items.map(i => `
       <div class="modal-row">
-        <span class="m-label">${i.type === 'wood' ? '🪵' : '🔵'} ${i.name}（${i.detail}）</span>
+        <span class="m-label">${i.type === 'wood' ? '🪵' : i.type === 'filament' ? '🔵' : '📦'} ${i.name}（${i.detail}）</span>
         <span class="m-val">${i.price.toLocaleString()} 円</span>
       </div>
     `).join('')}
@@ -1645,13 +1740,50 @@ function lookupTeacherStudent() {
 function switchTeacherTab(tab) {
   document.getElementById('tWoodBtn').classList.toggle('active', tab === 'wood');
   document.getElementById('tFilamentBtn').classList.toggle('active', tab === 'filament');
+  document.getElementById('tOtherBtn').classList.toggle('active', tab === 'other');
   document.getElementById('ttab-wood').classList.toggle('active', tab === 'wood');
   document.getElementById('ttab-filament').classList.toggle('active', tab === 'filament');
+  document.getElementById('ttab-other').classList.toggle('active', tab === 'other');
 }
 
 let tItems = [];
 let tWoodPrice = 0;
 let tFilamentPrice = 0;
+let tOtherPrice = 0;
+
+function calcTeacherOther() {
+  const name = document.getElementById('tOtherName').value.trim();
+  const price = parseFloat(document.getElementById('tOtherPrice').value) || 0;
+  const qty = parseInt(document.getElementById('tOtherQty').value) || 1;
+  const amountEl = document.getElementById('tOtherAmount');
+  const detailEl = document.getElementById('tOtherDetail');
+  const addBtn = document.getElementById('tAddOtherBtn');
+  if (!name || !price) {
+    amountEl.className = 'amount zero';
+    amountEl.innerHTML = '— <span>円</span>';
+    detailEl.textContent = '品名と単価を入力すると金額が表示されます';
+    tOtherPrice = 0;
+    addBtn.disabled = true;
+    return;
+  }
+  tOtherPrice = Math.ceil(price * qty);
+  amountEl.className = 'amount';
+  amountEl.innerHTML = `${tOtherPrice.toLocaleString()} <span>円</span>`;
+  detailEl.innerHTML = `${name} × ${qty}点　単価：${price.toLocaleString()}円`;
+  addBtn.disabled = false;
+}
+
+function addTeacherOther() {
+  const name = document.getElementById('tOtherName').value.trim();
+  const price = parseFloat(document.getElementById('tOtherPrice').value) || 0;
+  const qty = parseInt(document.getElementById('tOtherQty').value) || 1;
+  tItems.push({ type: 'other', name, detail: `${qty}点 × ¥${price.toLocaleString()}`, price: tOtherPrice });
+  renderTeacherList();
+  document.getElementById('tOtherName').value = '';
+  document.getElementById('tOtherPrice').value = '';
+  document.getElementById('tOtherQty').value = 1;
+  calcTeacherOther();
+}
 
 function calcTeacherWood() {
   const species = document.getElementById('tWoodSpecies');
@@ -1733,7 +1865,7 @@ function renderTeacherList() {
     list.innerHTML = tItems.map((item,idx) => `
       <div class="item-row">
         <div class="item-info">
-          <div class="item-name">${item.type==='wood'?'🪵':'🔵'} ${item.name}</div>
+          <div class="item-name">${item.type==='wood'?'🪵':item.type==='filament'?'🔵':'📦'} ${item.name}</div>
           <div class="item-detail">${item.detail}</div>
         </div>
         <div class="item-price">${item.price.toLocaleString()} 円</div>
@@ -1908,7 +2040,7 @@ function approveRequest(reqId) {
   const paymentDate = paymentDateInput ? paymentDateInput.value : '';
 
   const materialText = req.materials.map(m =>
-    `${m.type === 'wood' ? '木材' : 'フィラメント'}: ${m.name}（${m.detail}）¥${m.price.toLocaleString()}`
+    `${m.type === 'wood' ? '木材' : m.type === 'filament' ? 'フィラメント' : 'その他'}: ${m.name}（${m.detail}）¥${m.price.toLocaleString()}`
   ).join(' / ');
   const total = req.materials.reduce((s, m) => s + m.price, 0);
 
@@ -1953,15 +2085,30 @@ function switchPriceTab(tab) {
 }
 
 function renderPriceEditList() {
-  // 木材
+  // 木材（カテゴリ別グループ表示）
   const woodList = document.getElementById('woodPriceList');
-  woodList.innerHTML = WOOD_PRICES.map((w, i) => `
-    <div class="price-edit-row">
-      <span class="pe-name">${w.name}</span>
-      <input type="number" value="${w.pricePerM3}" min="0" onchange="WOOD_PRICES[${i}].pricePerM3 = parseInt(this.value)||0">
-      <span class="pe-unit">円/m³</span>
-      <button class="remove-btn" onclick="removeWoodPrice(${i})" title="削除">✕</button>
-    </div>
+  const catOrder = ['無垢材', '合板', 'その他材料'];
+  const grouped = {};
+  WOOD_PRICES.forEach((w, i) => {
+    const cat = w.category || 'その他材料';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push({ ...w, _idx: i });
+  });
+  const allCats = [...catOrder, ...Object.keys(grouped).filter(c2 => !catOrder.includes(c2))];
+  woodList.innerHTML = allCats.filter(cat => grouped[cat]?.length).map(cat => `
+    <div style="margin-top:10px;font-size:0.78rem;font-weight:700;color:#718096;padding:2px 4px;border-bottom:1px solid #e2e8f0;">${cat}</div>
+    ${grouped[cat].map(w => `
+      <div class="price-edit-row">
+        <span class="pe-name">${w.name}</span>
+        <select style="font-size:0.75rem;padding:4px;border:1px solid #cbd5e0;border-radius:6px;" onchange="WOOD_PRICES[${w._idx}].category=this.value;renderPriceEditList();rebuildSelects();">
+          ${['無垢材','合板','その他材料'].map(cat2=>`<option value="${cat2}"${cat2===w.category?' selected':''}>
+            ${cat2}</option>`).join('')}
+        </select>
+        <input type="number" value="${w.pricePerM3}" min="0" onchange="WOOD_PRICES[${w._idx}].pricePerM3=parseInt(this.value)||0">
+        <span class="pe-unit">円/m³</span>
+        <button class="remove-btn" onclick="removeWoodPrice(${w._idx})" title="削除">✕</button>
+      </div>
+    `).join('')}
   `).join('');
 
   // フィラメント
@@ -1988,8 +2135,9 @@ function removeFilamentPrice(i) {
 function addWoodPrice() {
   const name = document.getElementById('newWoodName').value.trim();
   const price = parseInt(document.getElementById('newWoodPrice').value) || 0;
-  if (!name || !price) { alert('樹種名と単価を入力してください'); return; }
-  WOOD_PRICES.push({ name, pricePerM3: price });
+  const category = document.getElementById('newWoodCategory').value || '無垢材';
+  if (!name || !price) { alert('品名と単価を入力してください'); return; }
+  WOOD_PRICES.push({ name, pricePerM3: price, category });
   document.getElementById('newWoodName').value = '';
   document.getElementById('newWoodPrice').value = '';
   renderPriceEditList();
