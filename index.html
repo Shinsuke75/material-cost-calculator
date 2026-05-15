@@ -2123,12 +2123,18 @@ function renderPriceEditList() {
 }
 
 function removeWoodPrice(i) {
+  if (!confirm('この材料を削除しますか？')) return;
   WOOD_PRICES.splice(i, 1);
   renderPriceEditList();
+  rebuildSelects();
+  savePrices();
 }
 function removeFilamentPrice(i) {
+  if (!confirm('このフィラメントを削除しますか？')) return;
   FILAMENT_PRICES.splice(i, 1);
   renderPriceEditList();
+  rebuildSelects();
+  savePrices();
 }
 
 function addWoodPrice() {
@@ -2141,6 +2147,7 @@ function addWoodPrice() {
   document.getElementById('newWoodPrice').value = '';
   renderPriceEditList();
   rebuildSelects();
+  savePrices();
 }
 
 function addFilamentPrice() {
@@ -2152,6 +2159,7 @@ function addFilamentPrice() {
   document.getElementById('newFilamentPrice').value = '';
   renderPriceEditList();
   rebuildSelects();
+  savePrices();
 }
 
 // セレクトボックスを最新のWOOD_PRICES/FILAMENT_PRICESで再構築
