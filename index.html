@@ -1731,6 +1731,7 @@ function setMode(mode) {
   document.getElementById('submitCard').style.display = isTeacher ? 'none' : 'block';
   document.getElementById('btnStudent').classList.toggle('active', !isTeacher);
   document.getElementById('btnTeacher').classList.toggle('active', isTeacher);
+  if (isTeacher) renderPriceEditList();
 }
 
 // 教員モード：学生ID入力時
