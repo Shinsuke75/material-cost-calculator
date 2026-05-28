@@ -937,6 +937,12 @@
     </div>
 
     <div class="tab-panel" id="ttab-other">
+      <div class="form-group" style="margin-bottom:14px;">
+        <label>プリセットから選ぶ（任意）</label>
+        <select id="tOtherPreset" onchange="selectTeacherOtherPreset()" style="width:100%;padding:10px 12px;border:1.5px solid #cbd5e0;border-radius:8px;font-size:0.9rem;background:white;">
+          <option value="">── 一覧から選ぶ（品名・単価が自動入力されます）──</option>
+        </select>
+      </div>
       <div class="input-row">
         <div class="form-group" style="flex:2;">
           <label>品名</label>
@@ -1009,6 +1015,7 @@
     <div class="tab-buttons">
       <button class="tab-btn active" id="peWoodBtn" onclick="switchPriceTab('wood')">📐 体積計算（木材・アクリル・スタイロなど）</button>
       <button class="tab-btn" id="peFilamentBtn" onclick="switchPriceTab('filament')">⚖️ 重さ計算（フィラメントなど）</button>
+      <button class="tab-btn" id="peOtherBtn" onclick="switchPriceTab('other')">📦 その他プリセット</button>
     </div>
 
     <!-- 木材編集 -->
@@ -1100,6 +1107,17 @@
       </div>
 
       <div class="price-edit-list" id="filamentPriceList"></div>
+    </div>
+
+    <!-- その他プリセット編集 -->
+    <div class="tab-panel" id="petab-other">
+      <div style="font-size:0.82rem;color:#718096;margin-bottom:10px;">「その他」タブに表示されるプリセット一覧を管理します。品名と単価を登録してください。</div>
+      <div class="price-add-row" style="margin-top:0;">
+        <input type="text" id="newOtherName" placeholder="品名（例：ボルト M6×30）" style="flex:2;">
+        <input type="number" id="newOtherPrice" placeholder="単価（円）" min="0" style="flex:1;min-width:80px;">
+        <button class="add-btn" onclick="addOtherPrice()" style="padding:10px 16px;">＋ 追加</button>
+      </div>
+      <div class="price-edit-list" id="otherPriceList"></div>
     </div>
 
     <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
@@ -1227,6 +1245,12 @@
 
     <!-- その他タブ -->
     <div class="tab-panel" id="tab-other">
+      <div class="form-group" style="margin-bottom:14px;">
+        <label>プリセットから選ぶ（任意）</label>
+        <select id="otherPreset" onchange="selectOtherPreset()" style="width:100%;padding:10px 12px;border:1.5px solid #cbd5e0;border-radius:8px;font-size:0.9rem;background:white;">
+          <option value="">── 一覧から選ぶ（品名・単価が自動入力されます）──</option>
+        </select>
+      </div>
       <div class="input-row">
         <div class="form-group" style="flex:2;">
           <label>品名</label>
@@ -1338,10 +1362,12 @@ const DEFAULT_FILAMENT_PRICES = [
   { name: 'TPU（フレキシブル）', pricePerG: 6.0  },
   { name: '木質PLA',            pricePerG: 7.0  },
 ];
+const DEFAULT_OTHER_PRICES = [];
 
 // 起動時はデフォルト値、GAS読み込み後に上書き
 let WOOD_PRICES = DEFAULT_WOOD_PRICES.map(x => ({...x}));
 let FILAMENT_PRICES = DEFAULT_FILAMENT_PRICES.map(x => ({...x}));
+let OTHER_PRICES = DEFAULT_OTHER_PRICES.map(x => ({...x}));
 
 const MARKUP = 1.2;
 
@@ -1369,6 +1395,10 @@ async function loadPricesFromGAS() {
         FILAMENT_PRICES = data.filament;
         localStorage.setItem('filamentPrices', JSON.stringify(data.filament));
       }
+      if (data.other && data.other.length > 0) {
+        OTHER_PRICES = data.other;
+        localStorage.setItem('otherPrices', JSON.stringify(data.other));
+      }
       console.log('GASから単価を読み込みました（木材' + WOOD_PRICES.length + '件、フィラメント' + FILAMENT_PRICES.length + '件）');
     }
   } catch(e) {
@@ -1376,6 +1406,8 @@ async function loadPricesFromGAS() {
     const savedFilament = localStorage.getItem('filamentPrices');
     if (savedWood) WOOD_PRICES = JSON.parse(savedWood);
     if (savedFilament) FILAMENT_PRICES = JSON.parse(savedFilament);
+    const savedOther = localStorage.getItem('otherPrices');
+    if (savedOther) OTHER_PRICES = JSON.parse(savedOther);
     console.warn('GAS価格読み込み失敗。キャッシュまたはデフォルト値を使用します。', e);
   }
 }
@@ -1477,6 +1509,24 @@ function addWoodItem() {
   document.getElementById('woodQty').value = 1;
   document.getElementById('woodSpecies').value = '';
   calcWood();
+}
+
+// その他プリセット選択
+function selectOtherPreset() {
+  const sel = document.getElementById('otherPreset');
+  const idx = parseInt(sel.value);
+  if (isNaN(idx) || !OTHER_PRICES[idx]) return;
+  document.getElementById('otherName').value = OTHER_PRICES[idx].name;
+  document.getElementById('otherPrice').value = OTHER_PRICES[idx].price;
+  calcOther();
+}
+function selectTeacherOtherPreset() {
+  const sel = document.getElementById('tOtherPreset');
+  const idx = parseInt(sel.value);
+  if (isNaN(idx) || !OTHER_PRICES[idx]) return;
+  document.getElementById('tOtherName').value = OTHER_PRICES[idx].name;
+  document.getElementById('tOtherPrice').value = OTHER_PRICES[idx].price;
+  calcTeacherOther();
 }
 
 // その他計算
@@ -2100,8 +2150,10 @@ renderPendingList();
 function switchPriceTab(tab) {
   document.getElementById('peWoodBtn').classList.toggle('active', tab === 'wood');
   document.getElementById('peFilamentBtn').classList.toggle('active', tab === 'filament');
+  document.getElementById('peOtherBtn').classList.toggle('active', tab === 'other');
   document.getElementById('petab-wood').classList.toggle('active', tab === 'wood');
   document.getElementById('petab-filament').classList.toggle('active', tab === 'filament');
+  document.getElementById('petab-other').classList.toggle('active', tab === 'other');
 }
 
 function renderPriceEditList() {
@@ -2141,6 +2193,20 @@ function renderPriceEditList() {
       <button class="remove-btn" onclick="removeFilamentPrice(${i})" title="削除">✕</button>
     </div>
   `).join('');
+
+  const otherList = document.getElementById('otherPriceList');
+  if (otherList) {
+    otherList.innerHTML = OTHER_PRICES.length === 0
+      ? '<div style="color:#a0aec0;font-size:0.85rem;padding:12px 4px;">プリセットはまだありません。上のフォームから追加してください。</div>'
+      : OTHER_PRICES.map((o, i) => `
+        <div class="price-edit-row">
+          <span class="pe-name">${o.name}</span>
+          <input type="number" value="${o.price}" min="0" onchange="OTHER_PRICES[${i}].price=parseInt(this.value)||0">
+          <span class="pe-unit">円</span>
+          <button class="remove-btn" onclick="removeOtherPrice(${i})" title="削除">✕</button>
+        </div>
+      `).join('');
+  }
 }
 
 function removeWoodPrice(i) {
@@ -2171,6 +2237,24 @@ function addWoodPrice() {
   savePrices();
 }
 
+function removeOtherPrice(i) {
+  if (!confirm('このプリセットを削除しますか？')) return;
+  OTHER_PRICES.splice(i, 1);
+  renderPriceEditList();
+  rebuildSelects();
+  savePrices();
+}
+function addOtherPrice() {
+  const name = document.getElementById('newOtherName').value.trim();
+  const price = parseInt(document.getElementById('newOtherPrice').value) || 0;
+  if (!name || !price) { alert('品名と単価を入力してください'); return; }
+  OTHER_PRICES.push({ name, price });
+  document.getElementById('newOtherName').value = '';
+  document.getElementById('newOtherPrice').value = '';
+  renderPriceEditList();
+  rebuildSelects();
+  savePrices();
+}
 function addFilamentPrice() {
   const name = document.getElementById('newFilamentName').value.trim();
   const price = parseFloat(document.getElementById('newFilamentPrice').value) || 0;
@@ -2183,7 +2267,7 @@ function addFilamentPrice() {
   savePrices();
 }
 
-// セレクトボックスを最新のWOOD_PRICES/FILAMENT_PRICESで再構築
+// セレクトボックスを最新のWOOD_PRICES/FILAMENT_PRICES/OTHER_PRICESで再構築
 function rebuildSelects() {
   const selIds = [
     { id: 'woodSpecies',   prices: WOOD_PRICES,    key: 'pricePerM3' },
@@ -2202,11 +2286,23 @@ function rebuildSelects() {
       sel.appendChild(opt);
     });
   });
+  ['otherPreset', 'tOtherPreset'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    while (sel.options.length > 1) sel.remove(1);
+    OTHER_PRICES.forEach((o, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.text = o.name + '（' + o.price.toLocaleString() + '円）';
+      sel.appendChild(opt);
+    });
+  });
 }
 
 function savePrices() {
   localStorage.setItem('woodPrices', JSON.stringify(WOOD_PRICES));
   localStorage.setItem('filamentPrices', JSON.stringify(FILAMENT_PRICES));
+  localStorage.setItem('otherPrices', JSON.stringify(OTHER_PRICES));
   // セレクトボックスを再構築
   rebuildSelects();
   // GASにも保存
@@ -2217,7 +2313,8 @@ function savePrices() {
     body: JSON.stringify({
       type: 'updatePrices',
       wood: WOOD_PRICES,
-      filament: FILAMENT_PRICES
+      filament: FILAMENT_PRICES,
+      other: OTHER_PRICES
     })
   }).catch(e => console.warn('GAS単価保存エラー:', e));
   const msg = document.getElementById('priceSaveMsg');
@@ -2229,8 +2326,10 @@ function resetPricesToDefault() {
   if (!confirm('単価を初期値に戻しますか？')) return;
   WOOD_PRICES = DEFAULT_WOOD_PRICES.map(x => ({...x}));
   FILAMENT_PRICES = DEFAULT_FILAMENT_PRICES.map(x => ({...x}));
+  OTHER_PRICES = DEFAULT_OTHER_PRICES.map(x => ({...x}));
   localStorage.removeItem('woodPrices');
   localStorage.removeItem('filamentPrices');
+  localStorage.removeItem('otherPrices');
   renderPriceEditList();
   rebuildSelects();
   const msg = document.getElementById('priceSaveMsg');
